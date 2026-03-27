@@ -1,378 +1,308 @@
-import React, { useEffect, useRef, useState, useCallback } from "react";
-import { X, Play, Pause, RotateCcw, Volume2, VolumeX, Maximize, Settings, Subtitles, Languages, FastForward } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { X, Play, Pause, Volume2, VolumeX, Maximize, Settings } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
-import type { Movie } from "@/types/tmdb";
-import Hls from "hls.js";
+import { useUpdateProgress } from "@/hooks/useWatchHistory";
 
 interface PlayerFrameProps {
-  movie: Movie;
+  movieId: string;
+  movieTitle: string;
+  moviePoster?: string;
   onClose: () => void;
-  initialSource?: string;
-  nextEpisode?: {
-    id: string;
-    title: string;
-    source?: string;
-  };
-  onNextEpisode?: (nextMovie: any) => void;
+  initialTime?: number;
+  mediaType?: "movie" | "tv";
+  seasonNumber?: number;
+  episodeNumber?: number;
+  episodeTitle?: string;
+  onNextEpisode?: () => void;
+  videoHash?: string;
+  audioType?: string;
 }
 
-const PlayerFrame = ({ movie, onClose, initialSource, nextEpisode, onNextEpisode }: PlayerFrameProps) => {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const [isPlaying, setIsPlaying] = useState(true);
-  const [progress, setProgress] = useState(0);
+const PlayerFrame = ({
+  movieId,
+  movieTitle,
+  moviePoster,
+  onClose,
+  initialTime = 0,
+  mediaType = "movie",
+  seasonNumber,
+  episodeNumber,
+  episodeTitle,
+  onNextEpisode,
+  videoHash,
+  audioType = "dub",
+}: PlayerFrameProps) => {
+  const [isLoading, setIsLoading] = useState(true);
+  const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
+  const [currentTime, setCurrentTime] = useState(initialTime);
+  const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
   const [showControls, setShowControls] = useState(true);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
-  const [showCountdown, setShowCountdown] = useState(false);
-  const [countdown, setCountdown] = useState(10);
-  const { user, profile } = useAuth();
-  const controlsTimeout = useRef<NodeJS.Timeout | null>(null);
-  const countdownInterval = useRef<NodeJS.Timeout | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const controlsTimeoutRef = useRef<NodeJS.Timeout>();
+  const updateProgressMutation = useUpdateProgress();
+  const cleanupFns = useRef<Array<() => void>>([]);
 
-  const videoSource = initialSource || "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
+  const displayTitle =
+    mediaType === "tv" && seasonNumber && episodeNumber
+      ? `${movieTitle} — T${seasonNumber}:E${episodeNumber}${episodeTitle ? ` "${episodeTitle}"` : ""}`
+      : movieTitle;
 
-  const togglePlay = useCallback(() => {
-    if (videoRef.current) {
-      if (videoRef.current.paused) {
-        videoRef.current.play().catch(console.error);
-        setIsPlaying(true);
-      } else {
-        videoRef.current.pause();
-        setIsPlaying(false);
+  // Construir URL do player nativo usando hash e audio
+  const videoUrl = videoHash
+    ? `https://bvsevecom/e/${videoHash}-${audioType}`
+    : mediaType === "tv" && seasonNumber && episodeNumber
+    ? `https://fembed.sx/e/${movieId}/${seasonNumber}-${episodeNumber}`
+    : `https://fembed.sx/e/${movieId}`;
+
+  const handleClose = () => {
+    cleanupFns.current.forEach((fn) => fn());
+    onClose();
+  };
+
+  // Atualizar progresso do vídeo
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (currentTime > 0 && videoRef.current) {
+        updateProgressMutation.mutate({
+          mediaId: movieId,
+          currentTime,
+          duration: videoRef.current.duration,
+          mediaType,
+          seasonNumber,
+          episodeNumber,
+        });
       }
-    }
-  }, []);
+    };
 
-  const toggleMute = useCallback(() => {
-    if (videoRef.current) {
-      const newMuted = !isMuted;
-      videoRef.current.muted = newMuted;
-      setIsMuted(newMuted);
-    }
-  }, [isMuted]);
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    cleanupFns.current.push(() => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    });
 
-  const handleSeek = (amount: number) => {
-    if (videoRef.current) {
-      videoRef.current.currentTime += amount;
+    return () => {
+      cleanupFns.current.forEach((fn) => fn());
+    };
+  }, [movieId, currentTime, mediaType, seasonNumber, episodeNumber, updateProgressMutation]);
+
+  // Controlar visibilidade dos controles
+  const handleMouseMove = () => {
+    setShowControls(true);
+    if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
+    if (isPlaying) {
+      controlsTimeoutRef.current = setTimeout(() => setShowControls(false), 3000);
     }
   };
 
-  const toggleFullscreen = useCallback(() => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(console.error);
-    } else {
-      document.exitFullscreen().catch(console.error);
-    }
-  }, []);
-
-  // Keyboard Shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      switch (e.code) {
-        case "Space":
-        case "KeyK":
-          e.preventDefault();
-          togglePlay();
-          break;
-        case "ArrowLeft":
-          e.preventDefault();
-          handleSeek(-10);
-          break;
-        case "ArrowRight":
-          e.preventDefault();
-          handleSeek(10);
-          break;
-        case "KeyM":
-          e.preventDefault();
-          toggleMute();
-          break;
-        case "KeyF":
-          e.preventDefault();
-          toggleFullscreen();
-          break;
-        case "Escape":
-          if (document.fullscreenElement) {
-            document.exitFullscreen();
-          } else {
-            onClose();
-          }
-          break;
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [togglePlay, toggleMute, toggleFullscreen, onClose]);
-
-  // Initialize HLS
-  useEffect(() => {
-    if (!videoRef.current) return;
-    const video = videoRef.current;
-    
-    if (videoSource.includes(".m3u8")) {
-      if (Hls.isSupported()) {
-        const hls = new Hls({ capLevelToPlayerSize: true, autoStartLoad: true });
-        hls.loadSource(videoSource);
-        hls.attachMedia(video);
-        hls.on(Hls.Events.MANIFEST_PARSED, () => video.play().catch(console.error));
-        return () => hls.destroy();
-      } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
-        video.src = videoSource;
-      }
-    } else {
-      video.src = videoSource;
-    }
-  }, [videoSource]);
-
-  // Progress Sync
-  useEffect(() => {
-    if (!user || !profile || !videoRef.current) return;
-    const interval = setInterval(async () => {
-      if (!videoRef.current || videoRef.current.paused) return;
-      const curr = Math.floor(videoRef.current.currentTime);
-      const dur = Math.floor(videoRef.current.duration);
-      if (curr > 0 && dur > 0) {
-        await supabase.from("watch_history").upsert({
-          user_id: user.id,
-          profile_id: profile.id,
-          movie_id: movie.id,
-          movie_title: movie.title,
-          movie_poster: movie.poster,
-          progress_seconds: curr,
-          duration_seconds: dur,
-          last_watched_at: new Date().toISOString(),
-        }, { onConflict: "profile_id,movie_id" });
-      }
-    }, 5000);
-    return () => clearInterval(interval);
-  }, [user, profile, movie]);
-
-  // End of video & Countdown logic
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-
-    const handleEnded = () => {
-      if (nextEpisode) {
-        setShowCountdown(true);
-        setCountdown(10);
-        countdownInterval.current = setInterval(() => {
-          setCountdown(prev => {
-            if (prev <= 1) {
-              if (countdownInterval.current) clearInterval(countdownInterval.current);
-              onNextEpisode?.(nextEpisode);
-              return 0;
-            }
-            return prev - 1;
-          });
-        }, 1000);
+  // Handlers do vídeo
+  const handlePlayPause = () => {
+    if (videoRef.current) {
+      if (isPlaying) {
+        videoRef.current.pause();
       } else {
-        onClose();
+        videoRef.current.play();
       }
-    };
-
-    video.addEventListener("ended", handleEnded);
-    return () => {
-      video.removeEventListener("ended", handleEnded);
-      if (countdownInterval.current) clearInterval(countdownInterval.current);
-    };
-  }, [nextEpisode, onNextEpisode, onClose]);
+      setIsPlaying(!isPlaying);
+    }
+  };
 
   const handleTimeUpdate = () => {
     if (videoRef.current) {
-      const curr = videoRef.current.currentTime;
-      const dur = videoRef.current.duration;
-      setCurrentTime(curr);
-      setDuration(dur);
-      setProgress((curr / dur) * 100);
+      setCurrentTime(videoRef.current.currentTime);
     }
   };
 
-  const handleMouseMove = () => {
-    setShowControls(true);
-    if (controlsTimeout.current) clearTimeout(controlsTimeout.current);
-    controlsTimeout.current = setTimeout(() => setShowControls(false), 3000);
+  const handleLoadedMetadata = () => {
+    if (videoRef.current) {
+      setDuration(videoRef.current.duration);
+      if (initialTime > 0) {
+        videoRef.current.currentTime = initialTime;
+      }
+      setIsLoading(false);
+    }
   };
 
-  const formatTime = (seconds: number) => {
-    if (isNaN(seconds)) return "00:00";
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    const s = Math.floor(seconds % 60);
-    return `${h > 0 ? h + ":" : ""}${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newVolume = parseFloat(e.target.value);
+    setVolume(newVolume);
+    if (videoRef.current) {
+      videoRef.current.volume = newVolume;
+    }
+  };
+
+  const handleProgressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newTime = parseFloat(e.target.value);
+    setCurrentTime(newTime);
+    if (videoRef.current) {
+      videoRef.current.currentTime = newTime;
+    }
+  };
+
+  const handleFullscreen = () => {
+    if (videoRef.current?.parentElement) {
+      videoRef.current.parentElement.requestFullscreen?.();
+    }
+  };
+
+  const formatTime = (time: number) => {
+    if (!time || isNaN(time)) return "0:00";
+    const hours = Math.floor(time / 3600);
+    const minutes = Math.floor((time % 3600) / 60);
+    const seconds = Math.floor(time % 60);
+    return hours > 0
+      ? `${hours}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`
+      : `${minutes}:${seconds.toString().padStart(2, "0")}`;
   };
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[200] bg-black flex items-center justify-center overflow-hidden"
+      className="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center overflow-hidden"
       onMouseMove={handleMouseMove}
-      style={{ cursor: showControls ? "default" : "none" }}
     >
-      <video
-        ref={videoRef}
-        autoPlay
-        playsInline
-        className="w-full h-full object-contain"
-        onTimeUpdate={handleTimeUpdate}
-        onClick={togglePlay}
-        onPlay={() => setIsPlaying(true)}
-        onPause={() => setIsPlaying(false)}
-      />
+      {/* Close button */}
+      <button
+        onClick={handleClose}
+        className="absolute top-4 right-4 z-30 bg-black/60 p-2 rounded-full hover:bg-black/80 transition-colors group"
+      >
+        <X className="w-6 h-6 text-white group-hover:scale-110 transition-transform" />
+      </button>
 
-      {/* Countdown Overlay */}
-      <AnimatePresence>
-        {showCountdown && (
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="absolute inset-0 z-[210] flex items-center justify-center bg-black/60 backdrop-blur-sm"
-          >
-            <div className="bg-zinc-900/90 p-8 rounded-2xl border border-white/10 shadow-2xl max-w-md w-full text-center space-y-6">
-              <div className="space-y-2">
-                <span className="text-primary font-black uppercase tracking-widest text-xs">Próximo Episódio</span>
-                <h3 className="text-white text-2xl font-black uppercase tracking-tighter">{nextEpisode?.title}</h3>
+      {/* Title bar */}
+      <div className="absolute top-4 left-4 z-30 max-w-[calc(100%-6rem)]">
+        <h2 className="text-white font-bold text-base md:text-lg drop-shadow truncate">{displayTitle}</h2>
+        {mediaType === "tv" && seasonNumber && episodeNumber && (
+          <p className="text-white/50 text-xs">
+            Temporada {seasonNumber} • Episódio {episodeNumber}
+          </p>
+        )}
+      </div>
+
+      {/* Player nativo HTML5 */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="absolute inset-0 flex items-center justify-center bg-black"
+      >
+        <video
+          ref={videoRef}
+          src={videoUrl}
+          className="w-full h-full object-contain"
+          onTimeUpdate={handleTimeUpdate}
+          onLoadedMetadata={handleLoadedMetadata}
+          onPlay={() => setIsPlaying(true)}
+          onPause={() => setIsPlaying(false)}
+          crossOrigin="anonymous"
+        />
+
+        {/* Controles do player */}
+        <AnimatePresence>
+          {showControls && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-x-0 bottom-0 z-20 bg-gradient-to-t from-black/80 to-transparent p-4"
+            >
+              {/* Progress bar */}
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-white text-xs">{formatTime(currentTime)}</span>
+                <input
+                  type="range"
+                  min="0"
+                  max={duration || 0}
+                  value={currentTime}
+                  onChange={handleProgressChange}
+                  className="flex-1 h-1 bg-white/30 rounded cursor-pointer accent-red-600"
+                />
+                <span className="text-white text-xs">{formatTime(duration)}</span>
               </div>
-              
-              <div className="relative w-24 h-24 mx-auto">
-                <svg className="w-full h-full transform -rotate-90">
-                  <circle
-                    cx="48" cy="48" r="40"
-                    stroke="currentColor" strokeWidth="4" fill="transparent"
-                    className="text-white/10"
-                  />
-                  <circle
-                    cx="48" cy="48" r="40"
-                    stroke="currentColor" strokeWidth="4" fill="transparent"
-                    strokeDasharray="251.2"
-                    strokeDashoffset={251.2 * (1 - countdown / 10)}
-                    className="text-primary transition-all duration-1000 linear"
-                  />
-                </svg>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-white text-3xl font-black">{countdown}</span>
+
+              {/* Control buttons */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  {/* Play/Pause */}
+                  <button
+                    onClick={handlePlayPause}
+                    className="p-2 hover:bg-white/20 rounded transition-colors"
+                  >
+                    {isPlaying ? (
+                      <Pause className="w-5 h-5 text-white" />
+                    ) : (
+                      <Play className="w-5 h-5 text-white" />
+                    )}
+                  </button>
+
+                  {/* Volume */}
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => {
+                        setIsMuted(!isMuted);
+                        if (videoRef.current) {
+                          videoRef.current.volume = isMuted ? volume : 0;
+                        }
+                      }}
+                      className="p-2 hover:bg-white/20 rounded transition-colors"
+                    >
+                      {isMuted ? (
+                        <VolumeX className="w-5 h-5 text-white" />
+                      ) : (
+                        <Volume2 className="w-5 h-5 text-white" />
+                      )}
+                    </button>
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.1"
+                      value={isMuted ? 0 : volume}
+                      onChange={handleVolumeChange}
+                      className="w-20 h-1 bg-white/30 rounded cursor-pointer accent-red-600"
+                    />
+                  </div>
+
+                  {/* Time display */}
+                  <span className="text-white text-sm ml-2 hidden sm:inline">
+                    {formatTime(currentTime)} / {formatTime(duration)}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {/* Settings */}
+                  <button className="p-2 hover:bg-white/20 rounded transition-colors">
+                    <Settings className="w-5 h-5 text-white" />
+                  </button>
+
+                  {/* Fullscreen */}
+                  <button
+                    onClick={handleFullscreen}
+                    className="p-2 hover:bg-white/20 rounded transition-colors"
+                  >
+                    <Maximize className="w-5 h-5 text-white" />
+                  </button>
                 </div>
               </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
 
-              <div className="flex gap-4">
-                <button 
-                  onClick={() => {
-                    if (countdownInterval.current) clearInterval(countdownInterval.current);
-                    setShowCountdown(false);
-                    onClose();
-                  }}
-                  className="flex-1 py-3 rounded-xl bg-white/10 text-white font-black uppercase tracking-tighter hover:bg-white/20 transition-colors"
-                >
-                  Cancelar
-                </button>
-                <button 
-                  onClick={() => {
-                    if (countdownInterval.current) clearInterval(countdownInterval.current);
-                    onNextEpisode?.(nextEpisode);
-                  }}
-                  className="flex-1 py-3 rounded-xl bg-primary text-white font-black uppercase tracking-tighter hover:bg-primary/80 transition-colors flex items-center justify-center gap-2"
-                >
-                  <FastForward className="w-4 h-4 fill-current" /> Agora
-                </button>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Controls Overlay */}
+      {/* Loading indicator */}
       <AnimatePresence>
-        {showControls && !showCountdown && (
-          <motion.div 
+        {isLoading && (
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 flex flex-col justify-between p-6 bg-gradient-to-t from-black/90 via-transparent to-black/60"
+            className="absolute inset-0 bg-black/50 flex items-center justify-center z-50"
           >
-            {/* Top Bar */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors group">
-                  <X className="text-white w-8 h-8 group-hover:scale-110 transition-transform" />
-                </button>
-                <div className="flex flex-col">
-                  <span className="text-primary text-[10px] font-black uppercase tracking-widest mb-1">Assistindo agora</span>
-                  <h2 className="text-white font-black uppercase tracking-tighter text-xl md:text-3xl leading-none">
-                    {movie.title}
-                  </h2>
-                </div>
-              </div>
-            </div>
-
-            {/* Bottom Bar */}
-            <div className="space-y-4 max-w-6xl mx-auto w-full pb-4">
-              <div 
-                className="relative h-1.5 w-full bg-white/10 rounded-full overflow-hidden cursor-pointer group mb-2"
-                onClick={(e) => {
-                  if (videoRef.current) {
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    const pos = (e.clientX - rect.left) / rect.width;
-                    videoRef.current.currentTime = pos * videoRef.current.duration;
-                  }
-                }}
-              >
-                <div className="absolute h-full bg-primary transition-all duration-100" style={{ width: `${progress}%` }} />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-8">
-                  <button onClick={togglePlay} className="text-white hover:scale-110 transition-transform">
-                    {isPlaying ? <Pause className="w-10 h-10 fill-current" /> : <Play className="w-10 h-10 fill-current" />}
-                  </button>
-                  <div className="flex items-center gap-4">
-                    <button className="text-white/60 hover:text-white transition-colors" onClick={() => handleSeek(-10)}>
-                      <RotateCcw className="w-6 h-6" />
-                    </button>
-                    <span className="text-white font-bold text-sm tabular-nums">
-                      {formatTime(currentTime)} <span className="text-white/30 mx-1">/</span> {formatTime(duration)}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-4 group">
-                    <button onClick={toggleMute} className="text-white/60 hover:text-white transition-colors">
-                      {isMuted ? <VolumeX className="w-6 h-6" /> : <Volume2 className="w-6 h-6" />}
-                    </button>
-                    <input 
-                      type="range" min="0" max="1" step="0.1" 
-                      value={isMuted ? 0 : volume}
-                      onChange={(e) => {
-                        const val = parseFloat(e.target.value);
-                        setVolume(val);
-                        if (videoRef.current) videoRef.current.volume = val;
-                        setIsMuted(val === 0);
-                      }}
-                      className="w-24 h-1 bg-white/10 rounded-full accent-primary appearance-none cursor-pointer"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-6">
-                  <button className="text-white/60 hover:text-white transition-colors flex items-center gap-2">
-                    <Languages className="w-5 h-5" />
-                    <span className="text-[10px] font-black uppercase tracking-widest hidden md:inline">Áudio: PT-BR</span>
-                  </button>
-                  <button className="text-white/60 hover:text-white transition-colors flex items-center gap-2">
-                    <Subtitles className="w-5 h-5" />
-                    <span className="text-[10px] font-black uppercase tracking-widest hidden md:inline">Legendas: Off</span>
-                  </button>
-                  <button className="text-white/60 hover:text-white transition-colors">
-                    <Settings className="w-6 h-6" />
-                  </button>
-                  <button className="text-white/60 hover:text-white transition-colors" onClick={toggleFullscreen}>
-                    <Maximize className="w-6 h-6" />
-                  </button>
-                </div>
-              </div>
+            <div className="flex flex-col items-center gap-4">
+              <div className="w-12 h-12 border-4 border-white/20 border-t-white rounded-full animate-spin" />
+              <p className="text-white text-sm font-medium">Carregando vídeo...</p>
             </div>
           </motion.div>
         )}
