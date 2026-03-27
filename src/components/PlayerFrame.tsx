@@ -4,10 +4,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useUpdateProgress } from "@/hooks/useWatchHistory";
 
 interface PlayerFrameProps {
-  movieId: string;
-  movieTitle: string;
+  movieId?: string;
+  movieTitle?: string;
   moviePoster?: string;
-  onClose: () => void;
+  onClose?: () => void;
   initialTime?: number;
   mediaType?: "movie" | "tv";
   seasonNumber?: number;
@@ -19,8 +19,8 @@ interface PlayerFrameProps {
 }
 
 const PlayerFrame = ({
-  movieId,
-  movieTitle,
+  movieId = "",
+  movieTitle = "Vídeo",
   moviePoster,
   onClose,
   initialTime = 0,
@@ -51,20 +51,20 @@ const PlayerFrame = ({
 
   // Construir URL do player nativo usando hash e audio
   const videoUrl = videoHash
-    ? `https://bvsevecom/e/${videoHash}-${audioType}`
+    ? `https://bysevepoin.com/e/${videoHash}-${audioType}`
     : mediaType === "tv" && seasonNumber && episodeNumber
     ? `https://fembed.sx/e/${movieId}/${seasonNumber}-${episodeNumber}`
     : `https://fembed.sx/e/${movieId}`;
 
   const handleClose = () => {
     cleanupFns.current.forEach((fn) => fn());
-    onClose();
+    if (onClose) onClose();
   };
 
   // Atualizar progresso do vídeo
   useEffect(() => {
     const handleBeforeUnload = () => {
-      if (currentTime > 0 && videoRef.current) {
+      if (currentTime > 0 && videoRef.current && movieId) {
         updateProgressMutation.mutate({
           mediaId: movieId,
           currentTime,
@@ -141,7 +141,11 @@ const PlayerFrame = ({
 
   const handleFullscreen = () => {
     if (videoRef.current?.parentElement) {
-      videoRef.current.parentElement.requestFullscreen?.();
+      if (document.fullscreenElement) {
+        document.exitFullscreen();
+      } else {
+        videoRef.current.parentElement.requestFullscreen?.();
+      }
     }
   };
 
