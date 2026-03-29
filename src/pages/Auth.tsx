@@ -55,7 +55,7 @@ const Auth = () => {
       if (mode !== "forgot-password") {
         const passwordResult = passwordSchema.safeParse(password);
         if (!passwordResult.success) {
-          newErrors.password = passwordResult.error.errors[0].message;
+          newErrors.password = passwordResult.error.issues[0].message;
         }
       }
 
