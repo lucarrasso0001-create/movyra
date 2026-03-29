@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { X, Play, Pause, Volume2, VolumeX, Maximize, SkipForward } from "lucide-react";
+import { X, Play, Pause, Volume2, VolumeX, Maximize, SkipForward, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useUpdateProgress } from "@/hooks/useWatchHistory";
+import { fetchDirectVideoLink } from "@/hooks/useTMDB";
 
 interface NextEpisodeInfo {
   title: string;
@@ -48,6 +49,8 @@ const PlayerFrame = ({
   const [volume, setVolume] = useState(1);
   const [showControls, setShowControls] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
+  const [directUrl, setDirectUrl] = useState<string | null>(null);
+  const [isCapturing, setIsCapturing] = useState(false);
 
   // Auto-play next episode state
   const [showNextOverlay, setShowNextOverlay] = useState(false);
@@ -64,11 +67,35 @@ const PlayerFrame = ({
       ? `${movieTitle} — T${seasonNumber}:E${episodeNumber}${episodeTitle ? ` "${episodeTitle}"` : ""}`
       : movieTitle;
 
-  const videoUrl = videoHash
+  const videoUrl = directUrl || (videoHash
     ? `https://bysevepoin.com/e/${videoHash}-${audioType}`
     : mediaType === "tv" && seasonNumber && episodeNumber
     ? `https://fembed.sx/e/${movieId}/${seasonNumber}-${episodeNumber}`
-    : `https://fembed.sx/e/${movieId}`;
+    : `https://fembed.sx/e/${movieId}`);
+
+  // Efeito para capturar link direto se for Fembed
+  useEffect(() => {
+    const captureLink = async () => {
+      // Se já temos um hash direto ou se não é Fembed, não precisamos capturar
+      if (videoHash || directUrl) return;
+
+      const currentUrl = mediaType === "tv" && seasonNumber && episodeNumber
+        ? `https://fembed.sx/e/${movieId}/${seasonNumber}-${episodeNumber}`
+        : `https://fembed.sx/e/${movieId}`;
+
+      if (currentUrl.includes('fembed')) {
+        setIsCapturing(true);
+        const captured = await fetchDirectVideoLink(currentUrl);
+        if (captured) {
+          console.log("[Player] Link direto capturado com sucesso:", captured);
+          setDirectUrl(captured);
+        }
+        setIsCapturing(false);
+      }
+    };
+
+    captureLink();
+  }, [movieId, mediaType, seasonNumber, episodeNumber, videoHash]);
 
   // Handle video ended → trigger next episode countdown
   const handleVideoEnded = useCallback(() => {
@@ -290,17 +317,25 @@ const PlayerFrame = ({
 
       {/* Video */}
       <div className="absolute inset-0 flex items-center justify-center bg-black">
-        <video
-          ref={videoRef}
-          src={videoUrl}
-          className="w-full h-full object-contain"
-          onTimeUpdate={handleTimeUpdate}
-          onLoadedMetadata={handleLoadedMetadata}
-          onPlay={() => setIsPlaying(true)}
-          onPause={() => setIsPlaying(false)}
-          onEnded={handleVideoEnded}
-          crossOrigin="anonymous"
-        />
+        {isCapturing ? (
+          <div className="flex flex-col items-center gap-4 z-20">
+            <Loader2 className="w-12 h-12 text-primary animate-spin" />
+            <p className="text-white/70 font-bold animate-pulse">Capturando link direto...</p>
+          </div>
+        ) : (
+          <video
+            ref={videoRef}
+            src={videoUrl}
+            className="w-full h-full object-contain"
+            onTimeUpdate={handleTimeUpdate}
+            onLoadedMetadata={handleLoadedMetadata}
+            onPlay={() => setIsPlaying(true)}
+            onPause={() => setIsPlaying(false)}
+            onEnded={handleVideoEnded}
+            crossOrigin="anonymous"
+            autoPlay
+          />
+        )}
 
         {/* Click to play/pause */}
         {!showNextOverlay && (

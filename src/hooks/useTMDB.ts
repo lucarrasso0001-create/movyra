@@ -41,6 +41,35 @@ async function fetchTMDB<T>(endpoint: string, params: Record<string, string> = {
   }
 }
 
+/**
+ * Captura o link direto (.mp4) de um provedor (ex: Fembed) via Edge Function.
+ * Esta função simula o comportamento de uma extensão de navegador.
+ */
+export async function fetchDirectVideoLink(providerUrl: string): Promise<string | null> {
+  try {
+    console.log(`[VideoCapture] Tentando capturar link direto para: ${providerUrl}`);
+    
+    // Chamamos a mesma Edge Function 'tmdb', mas com um endpoint especial 'capture'
+    // que deve ser tratado na lógica da função no Supabase.
+    const { data, error } = await supabase.functions.invoke("tmdb", {
+      body: { 
+        endpoint: "capture", 
+        params: { url: providerUrl } 
+      },
+    });
+
+    if (error) {
+      console.error("[VideoCapture] Erro ao capturar link:", error);
+      return null;
+    }
+
+    return data?.directUrl || null;
+  } catch (err) {
+    console.error("[VideoCapture] Erro crítico na captura:", err);
+    return null;
+  }
+}
+
 // Helper to get age rating filter params
 const getCertificationParams = (maxAge: number, type: "movie" | "tv"): Record<string, string> => {
   if (maxAge >= 18) return {};
