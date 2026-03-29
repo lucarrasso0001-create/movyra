@@ -74,6 +74,8 @@ const PlayerFrame = ({
     ? `https://fembed.sx/e/${movieId}/${seasonNumber}-${episodeNumber}`
     : `https://fembed.sx/e/${movieId}`);
 
+  const isIframe = (videoUrl.includes('fembed.sx') || videoUrl.includes('bysevepoin.com')) && !directUrl;
+
   // Efeito para capturar link direto se for Fembed
   useEffect(() => {
     const captureLink = async () => {
@@ -309,7 +311,7 @@ const PlayerFrame = ({
 
       {/* Title bar */}
       <AnimatePresence>
-        {showControls && !showNextOverlay && (
+        {showControls && !showNextOverlay && !isIframe && (
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -363,7 +365,7 @@ const PlayerFrame = ({
         )}
 
         {/* Click to play/pause */}
-        {!showNextOverlay && (
+        {!showNextOverlay && !isIframe && (
           <div
             className="absolute inset-0 z-10 cursor-pointer"
             onClick={handlePlayPause}
@@ -372,7 +374,7 @@ const PlayerFrame = ({
 
         {/* Controls */}
         <AnimatePresence>
-          {showControls && !showNextOverlay && (
+          {showControls && !showNextOverlay && !isIframe && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -450,7 +452,7 @@ const PlayerFrame = ({
 
       {/* Loading */}
       <AnimatePresence>
-        {isLoading && (
+        {isLoading && !isIframe && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
