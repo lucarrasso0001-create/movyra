@@ -94,9 +94,8 @@ const PlayerFrame = ({
             setDirectUrl(captured);
           } else {
             console.warn("[Player] Falha ao capturar link direto. Usando iframe como fallback.");
-            setCaptureError("Não foi possível capturar o link direto. Tentando carregar via player alternativo...");
-            // Aguarda 3 segundos para o usuário ler a mensagem antes de tentar o fallback
-            setTimeout(() => setCaptureError(null), 3000);
+            // Se falhar, não mostramos erro longo, apenas mudamos para o iframe imediatamente
+            setDirectUrl(null);
           }
         } catch (err) {
           console.error("[Player] Erro na captura:", err);

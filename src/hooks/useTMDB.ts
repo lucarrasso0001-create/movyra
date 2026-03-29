@@ -59,6 +59,12 @@ export async function fetchDirectVideoLink(providerUrl: string): Promise<string 
     });
 
     if (error) {
+      // Se o erro for 403 (Endpoint not permitted), silenciamos e retornamos null
+      // para que o player possa fazer o fallback silencioso para iframe.
+      if (error.message?.includes("403") || error.message?.includes("Endpoint not permitted")) {
+        console.warn("[VideoCapture] Captura via Edge Function não permitida. Usando fallback.");
+        return null;
+      }
       console.error("[VideoCapture] Erro ao capturar link:", error);
       return null;
     }
