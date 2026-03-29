@@ -84,9 +84,9 @@ const MovieModal = () => {
                 <span className="flex items-center gap-1 text-white/60 text-xs font-bold">
                   <Calendar size={12} /> {selectedMovie.year}
                 </span>
-                {selectedMovie.duration && (
+                {(selectedMovie as any).duration && (
                   <span className="flex items-center gap-1 text-white/60 text-xs font-bold">
-                    <Clock size={12} /> {selectedMovie.duration}
+                    <Clock size={12} /> {(selectedMovie as any).duration}
                   </span>
                 )}
               </div>

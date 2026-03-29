@@ -62,7 +62,7 @@ const Auth = () => {
       if (mode === "signup" && displayName) {
         const nameResult = nameSchema.safeParse(displayName);
         if (!nameResult.success) {
-          newErrors.name = nameResult.error.errors[0].message;
+          newErrors.name = nameResult.error.issues[0].message;
         }
       }
     }
