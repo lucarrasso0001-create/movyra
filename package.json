@@ -24,8 +24,9 @@
     "react-router-dom": "^6.28.0",
     "sonner": "^1.7.1",
     "tailwind-merge": "^2.6.0",
+    "tailwind-scrollbar-hide": "^1.1.7",
     "tailwindcss-animate": "^1.0.7",
-    "tailwind-scrollbar-hide": "^1.1.7"
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/node": "^22.10.1",
