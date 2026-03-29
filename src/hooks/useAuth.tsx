@@ -47,6 +47,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (!error && data) {
         setProfileState(data);
+      } else if (error) {
+        console.error("Error fetching profile:", error);
       }
     } catch (err) {
       console.error("Error fetching profile:", err);
@@ -57,6 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        console.log("Auth state changed:", event, session?.user?.id);
         setSession(session);
         setUser(session?.user ?? null);
         setIsLoading(false);
