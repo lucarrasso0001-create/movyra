@@ -487,20 +487,14 @@ export interface MediaSource {
   provider: string;
 }
 
-export function useMediaSources(movieId: string, mediaType: "movie" | "tv" = "movie") {
+// Media sources hook disabled - table not yet created
+export function useMediaSources(_movieId: string, _mediaType: "movie" | "tv" = "movie") {
   return useQuery({
-    queryKey: ["media_sources", movieId, mediaType],
+    queryKey: ["media_sources", _movieId, _mediaType],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("media_sources")
-        .select("*")
-        .eq("movie_id", movieId)
-        .eq("media_type", mediaType);
-
-      if (error) throw error;
-      return data as MediaSource[];
+      return [] as MediaSource[];
     },
-    enabled: !!movieId,
+    enabled: false,
   });
 }
 

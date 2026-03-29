@@ -55,7 +55,7 @@ const PlayerFrame = ({
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const videoRef = useRef<HTMLVideoElement>(null);
-  const controlsTimeoutRef = useRef<NodeJS.Timeout>();
+  const controlsTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
   const updateProgressMutation = useUpdateProgress();
   const cleanupFns = useRef<Array<() => void>>([]);
 
