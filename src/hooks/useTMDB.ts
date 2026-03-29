@@ -42,7 +42,7 @@ async function fetchTMDB<T>(endpoint: string, params: Record<string, string> = {
 }
 
 // Helper to get age rating filter params
-const getCertificationParams = (maxAge: number, type: "movie" | "tv") => {
+const getCertificationParams = (maxAge: number, type: "movie" | "tv"): Record<string, string> => {
   if (maxAge >= 18) return {};
   
   return {
