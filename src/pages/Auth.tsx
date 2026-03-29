@@ -44,25 +44,25 @@ const Auth = () => {
     if (mode === "verify-code") {
       const codeResult = codeSchema.safeParse(verificationCode);
       if (!codeResult.success) {
-        newErrors.code = codeResult.error.errors[0].message;
+        newErrors.code = codeResult.error.issues[0].message;
       }
     } else {
       const emailResult = emailSchema.safeParse(email);
       if (!emailResult.success) {
-        newErrors.email = emailResult.error.errors[0].message;
+        newErrors.email = emailResult.error.issues[0].message;
       }
 
       if (mode !== "forgot-password") {
         const passwordResult = passwordSchema.safeParse(password);
         if (!passwordResult.success) {
-          newErrors.password = passwordResult.error.errors[0].message;
+          newErrors.password = passwordResult.error.issues[0].message;
         }
       }
 
       if (mode === "signup" && displayName) {
         const nameResult = nameSchema.safeParse(displayName);
         if (!nameResult.success) {
-          newErrors.name = nameResult.error.errors[0].message;
+          newErrors.name = nameResult.error.issues[0].message;
         }
       }
     }
