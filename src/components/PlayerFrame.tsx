@@ -51,6 +51,7 @@ const PlayerFrame = ({
   const [isLoading, setIsLoading] = useState(true);
   const [directUrl, setDirectUrl] = useState<string | null>(null);
   const [isCapturing, setIsCapturing] = useState(false);
+  const [captureError, setCaptureError] = useState<string | null>(null);
 
   // Auto-play next episode state
   const [showNextOverlay, setShowNextOverlay] = useState(false);
@@ -85,12 +86,25 @@ const PlayerFrame = ({
 
       if (currentUrl.includes('fembed')) {
         setIsCapturing(true);
-        const captured = await fetchDirectVideoLink(currentUrl);
-        if (captured) {
-          console.log("[Player] Link direto capturado com sucesso:", captured);
-          setDirectUrl(captured);
+        setCaptureError(null);
+        try {
+          const captured = await fetchDirectVideoLink(currentUrl);
+          if (captured) {
+            console.log("[Player] Link direto capturado com sucesso:", captured);
+            setDirectUrl(captured);
+          } else {
+            console.warn("[Player] Falha ao capturar link direto. Usando iframe como fallback.");
+            setCaptureError("Não foi possível capturar o link direto. Tentando carregar via player alternativo...");
+            // Aguarda 3 segundos para o usuário ler a mensagem antes de tentar o fallback
+            setTimeout(() => setCaptureError(null), 3000);
+          }
+        } catch (err) {
+          console.error("[Player] Erro na captura:", err);
+          setCaptureError("Erro técnico na captura. Carregando player padrão...");
+          setTimeout(() => setCaptureError(null), 3000);
+        } finally {
+          setIsCapturing(false);
         }
-        setIsCapturing(false);
       }
     };
 
@@ -322,6 +336,18 @@ const PlayerFrame = ({
             <Loader2 className="w-12 h-12 text-primary animate-spin" />
             <p className="text-white/70 font-bold animate-pulse">Capturando link direto...</p>
           </div>
+        ) : captureError ? (
+          <div className="flex flex-col items-center gap-4 z-20 p-6 text-center">
+            <Loader2 className="w-8 h-8 text-yellow-500 animate-spin" />
+            <p className="text-white/80 max-w-md">{captureError}</p>
+          </div>
+        ) : videoUrl.includes('fembed.sx') || videoUrl.includes('bysevepoin.com') ? (
+          <iframe
+            src={videoUrl}
+            className="w-full h-full border-0"
+            allowFullScreen
+            allow="autoplay; encrypted-media"
+          />
         ) : (
           <video
             ref={videoRef}
