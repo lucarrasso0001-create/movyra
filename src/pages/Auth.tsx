@@ -44,7 +44,7 @@ const Auth = () => {
     if (mode === "verify-code") {
       const codeResult = codeSchema.safeParse(verificationCode);
       if (!codeResult.success) {
-        newErrors.code = codeResult.error.errors[0].message;
+        newErrors.code = codeResult.error.issues[0].message;
       }
     } else {
       const emailResult = emailSchema.safeParse(email);
