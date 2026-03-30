@@ -95,7 +95,10 @@ CREATE TRIGGER update_profiles_updated_at
   FOR EACH ROW
   EXECUTE FUNCTION public.update_updated_at_column();
 
--- 8. Função para criar perfil automático no cadastro (Opcional)
+-- 8. Função para criar perfil automático no cadastro (DESATIVADO)
+-- Para que o usuário crie seu próprio perfil no primeiro acesso,
+-- os comandos abaixo foram comentados.
+/*
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -109,9 +112,9 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 9. Trigger para criação automática
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW
   EXECUTE FUNCTION public.handle_new_user();
+*/

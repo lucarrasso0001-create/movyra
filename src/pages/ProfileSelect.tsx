@@ -92,6 +92,10 @@ const ProfileSelect = () => {
       if (error) throw error;
       if (data) {
         setProfiles(data);
+        // Se não houver perfis, abre automaticamente o modo de criação
+        if (data.length === 0) {
+          handleOpenCreate();
+        }
       }
     } catch (err: any) {
       console.error("Erro ao buscar perfis:", err);
