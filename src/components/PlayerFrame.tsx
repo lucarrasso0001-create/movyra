@@ -50,6 +50,7 @@ const PlayerFrame = ({
   const [showControls, setShowControls] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [directUrl, setDirectUrl] = useState<string | null>(null);
+  const [bunnyVideo, setBunnyVideo] = useState<{ videoId: string; libraryId: string } | null>(null);
   const [isCapturing, setIsCapturing] = useState(false);
   const [captureError, setCaptureError] = useState<string | null>(null);
 
@@ -74,42 +75,50 @@ const PlayerFrame = ({
     ? `https://fembed.sx/e/${movieId}/${seasonNumber}-${episodeNumber}`
     : `https://fembed.sx/e/${movieId}`);
 
-  const isIframe = (videoUrl.includes('fembed.sx') || videoUrl.includes('bysevepoin.com')) && !directUrl;
+  const isIframe = ((videoUrl.includes('fembed.sx') || videoUrl.includes('bysevepoin.com')) && !directUrl) || !!bunnyVideo;
 
-  // Efeito para capturar link direto se for Fembed
+  // Efeito para buscar Bunny Stream ou capturar link direto
   useEffect(() => {
-    const captureLink = async () => {
-      // Se já temos um hash direto ou se não é Fembed, não precisamos capturar
-      if (videoHash || directUrl) return;
+    const loadVideoSource = async () => {
+      // Se já temos um hash direto, não precisamos buscar
+      if (videoHash) return;
 
-      const currentUrl = mediaType === "tv" && seasonNumber && episodeNumber
-        ? `https://fembed.sx/e/${movieId}/${seasonNumber}-${episodeNumber}`
-        : `https://fembed.sx/e/${movieId}`;
+      setIsCapturing(true);
+      setCaptureError(null);
 
-      if (currentUrl.includes('fembed')) {
-        setIsCapturing(true);
-        setCaptureError(null);
-        try {
+      try {
+        // 1. Tenta buscar no Bunny Stream via Supabase primeiro
+        const bunnyData = await fetchBunnyVideoId(movieId, mediaType, seasonNumber, episodeNumber);
+        if (bunnyData) {
+          console.log("[Player] Bunny Stream ID encontrado:", bunnyData);
+          setBunnyVideo(bunnyData);
+          setIsCapturing(false);
+          return;
+        }
+
+        // 2. Se não tiver no Bunny, tenta capturar link direto do Fembed
+        const currentUrl = mediaType === "tv" && seasonNumber && episodeNumber
+          ? `https://fembed.sx/e/${movieId}/${seasonNumber}-${episodeNumber}`
+          : `https://fembed.sx/e/${movieId}`;
+
+        if (currentUrl.includes('fembed')) {
           const captured = await fetchDirectVideoLink(currentUrl);
           if (captured) {
             console.log("[Player] Link direto capturado com sucesso:", captured);
             setDirectUrl(captured);
           } else {
             console.warn("[Player] Falha ao capturar link direto. Usando iframe como fallback.");
-            // Se falhar, não mostramos erro longo, apenas mudamos para o iframe imediatamente
             setDirectUrl(null);
           }
-        } catch (err) {
-          console.error("[Player] Erro na captura:", err);
-          setCaptureError("Erro técnico na captura. Carregando player padrão...");
-          setTimeout(() => setCaptureError(null), 3000);
-        } finally {
-          setIsCapturing(false);
         }
+      } catch (err) {
+        console.error("[Player] Erro ao carregar fonte de vídeo:", err);
+      } finally {
+        setIsCapturing(false);
       }
     };
 
-    captureLink();
+    loadVideoSource();
   }, [movieId, mediaType, seasonNumber, episodeNumber, videoHash]);
 
   // Handle video ended → trigger next episode countdown
@@ -341,6 +350,16 @@ const PlayerFrame = ({
           <div className="flex flex-col items-center gap-4 z-20 p-6 text-center">
             <Loader2 className="w-8 h-8 text-yellow-500 animate-spin" />
             <p className="text-white/80 max-w-md">{captureError}</p>
+          </div>
+        ) : bunnyVideo ? (
+          <div className="w-full h-full relative">
+            <iframe
+              src={`https://iframe.mediadelivery.net/embed/${bunnyVideo.libraryId}/${bunnyVideo.videoId}?autoplay=true&loop=false&muted=false&preload=true&responsive=true`}
+              loading="lazy"
+              className="absolute inset-0 w-full h-full border-0"
+              allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
+              allowFullScreen
+            />
           </div>
         ) : videoUrl.includes('fembed.sx') || videoUrl.includes('bysevepoin.com') ? (
           <iframe

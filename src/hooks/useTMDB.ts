@@ -74,8 +74,61 @@ export async function fetchDirectVideoLink(providerUrl: string): Promise<string 
     console.error("[VideoCapture] Erro crítico na captura:", err);
     return null;
   }
-}
+};
 
+/**
+ * Busca o ID do vídeo na Bunny Stream associado a um TMDB ID no Supabase.
+ */
+export const fetchBunnyVideoId = async (
+  tmdbId: string | number,
+  mediaType: "movie" | "tv" = "movie",
+  season?: number,
+  episode?: number
+): Promise<{ videoId: string; libraryId: string } | null> => {
+  try {
+    const numericId = typeof tmdbId === "string" ? parseInt(tmdbId) : tmdbId;
+
+    if (mediaType === "movie") {
+      // Busca na tabela 'conteudos' (que parece ser a de filmes no seu schema)
+      // Nota: O schema mostra 'imdb_id', mas vamos tentar relacionar pelo ID ou título se necessário.
+      // No seu exemplo, você sugeriu tmdb_id, então vamos assumir que existe ou usar o imdb_id.
+      const { data, error } = await supabase
+        .from("conteudos")
+        .select("bunny_id")
+        .or(`imdb_id.eq.${tmdbId},id.eq.${tmdbId}`)
+        .single();
+
+      if (data?.bunny_id) {
+        return { videoId: data.bunny_id, libraryId: "338161" }; // ID da biblioteca padrão (ajuste se necessário)
+      }
+    } else {
+      // Para séries, buscamos na tabela 'episodios' relacionando com a 'series'
+      const { data: serieData } = await supabase
+        .from("series")
+        .select("id")
+        .eq("tmdb_id", numericId)
+        .single();
+
+      if (serieData) {
+        const { data: epiData } = await supabase
+          .from("episodios")
+          .select("bunny_id")
+          .eq("serie_id", serieData.id)
+          .eq("temporada", season || 1)
+          .eq("episodio", episode || 1)
+          .single();
+
+        if (epiData?.bunny_id) {
+          return { videoId: epiData.bunny_id, libraryId: "338161" };
+        }
+      }
+    }
+    return null;
+  } catch (err) {
+    console.error("[BunnyStream] Erro ao buscar ID do vídeo:", err);
+    return null;
+  }
+};
 // Helper to get age rating filter params
 const getCertificationParams = (maxAge: number, type: "movie" | "tv"): Record<string, string> => {
   if (maxAge >= 18) return {};
