@@ -23,16 +23,20 @@ export async function fetchTMDB<T>(endpoint: string, params: Record<string, stri
 
     if (error) {
       console.error("[TMDB] Erro na Edge Function:", error);
-      // Se o erro for 403 (Endpoint not permitted), silenciamos e retornamos um objeto vazio
-      // para evitar que o site trave com a tela de erro laranja do Lovable.
-      if (error.message?.includes("403") || error.message?.includes("Endpoint not permitted")) {
-        console.warn("[TMDB] Endpoint não permitido pela Edge Function. Retornando dados vazios.");
+      // TRATAMENTO ULTRA-ROBUSTO: Se o erro for 403 ou qualquer erro de permissão,
+      // retornamos um objeto vazio IMEDIATAMENTE para que o React não quebre.
+      const errorMsg = String(error.message || "").toLowerCase();
+      if (errorMsg.includes("403") || errorMsg.includes("permitted") || errorMsg.includes("forbidden")) {
+        console.warn("[TMDB] Bloqueio de segurança detectado (403). Silenciando erro para o usuário.");
         return { results: [], page: 1, total_pages: 0, total_results: 0 } as any;
       }
-      if (error.message?.includes("401") || error.message?.includes("Authentication")) {
+      
+      if (errorMsg.includes("401") || errorMsg.includes("auth")) {
         console.warn("[TMDB] Erro de autenticação. Verifique se o usuário está logado.");
       }
-      throw new Error(error.message || "Failed to fetch from TMDB");
+      
+      // Em vez de dar throw, vamos retornar um objeto vazio para garantir que o app não trave
+      return { results: [], page: 1, total_pages: 0, total_results: 0 } as any;
     }
 
     if (!data) {

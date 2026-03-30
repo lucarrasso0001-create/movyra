@@ -1,23 +1,14 @@
-import { useQuery } from "@tanstack/react-query";
+import { usePopularMovies, usePopularTV } from "@/hooks/useTMDB";
 import Navbar from "@/components/Navbar";
 import MovieCard from "@/components/MovieCard";
-import { fetchMovies, fetchTVShows } from "@/hooks/useTMDB";
 import { TrendingUp, Flame, Trophy } from "lucide-react";
 import { motion } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const Trending = () => {
-  // Usar endpoints que temos certeza que estão liberados na Edge Function (popular)
-  // em vez de /trending/all que está dando erro 403
-  const { data: popularMovies, isLoading: loadingMovies } = useQuery({
-    queryKey: ["trending-movies-popular"],
-    queryFn: () => fetchMovies("popular"),
-  });
-
-  const { data: popularTV, isLoading: loadingTV } = useQuery({
-    queryKey: ["trending-tv-popular"],
-    queryFn: () => fetchTVShows("popular"),
-  });
+  // Usar hooks que já estão validados e funcionando em outras partes do site
+  const { data: popularMovies, isLoading: loadingMovies } = usePopularMovies();
+  const { data: popularTV, isLoading: loadingTV } = usePopularTV();
 
   // Combinar e embaralhar para simular tendências gerais
   const trendingAll = [...(popularMovies || []), ...(popularTV || [])]
