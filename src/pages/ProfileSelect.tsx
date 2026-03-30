@@ -146,7 +146,7 @@ const ProfileSelect = () => {
       toast({ title: "Limite atingido", description: "Você pode ter no máximo 4 perfis.", variant: "destructive" });
       return;
     }
-    setEditingProfileId(null);
+    setEditingProfileId("new");
     setNewName("");
     setSelectedAvatar(AVATAR_OPTIONS[Math.floor(Math.random() * AVATAR_OPTIONS.length)]);
     setProfileIsKids(false);
@@ -205,7 +205,7 @@ const ProfileSelect = () => {
         user_id: user.id,
       };
 
-      if (editingProfileId) {
+      if (editingProfileId && editingProfileId !== "new") {
         const { error } = await supabase
           .from("profiles")
           .update(profileData)
@@ -351,7 +351,7 @@ const ProfileSelect = () => {
                     className="w-full h-full object-cover"
                   />
                   {isManaging && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                    <div className={`absolute inset-0 flex items-center justify-center bg-black/40 transition-opacity ${editingProfileId === p.id ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}>
                       <Pencil className="w-8 h-8 text-white" />
                     </div>
                   )}
@@ -395,7 +395,7 @@ const ProfileSelect = () => {
         </div>
 
         <AnimatePresence mode="wait">
-          {isManaging && (
+          {isManaging && editingProfileId && (
             <motion.div
               key="manage-panel"
               initial={{ opacity: 0, y: 10 }}
@@ -622,10 +622,10 @@ const ProfileSelect = () => {
                   style={{ background: "hsl(var(--primary))", color: "hsl(var(--primary-foreground))" }}
                 >
                   {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-                  {editingProfileId ? "Salvar" : "Criar"}
+                  {editingProfileId && editingProfileId !== "new" ? "Salvar" : "Criar"}
                 </button>
                 
-                {editingProfileId && profiles.length > 1 && (
+                {editingProfileId && editingProfileId !== "new" && profiles.length > 1 && (
                   <button
                     onClick={handleDeleteProfile}
                     disabled={isDeleting}
