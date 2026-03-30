@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { 
   Mail, Shield, CreditCard, Bell, Settings, 
   LogOut, ChevronRight, Star, Clock, Trash2, Edit2,
-  Camera, Check, X, Loader2, Key, Smartphone, Globe
+  Camera, Check, X, Loader2, Key, Smartphone, Globe,
+  AlertCircle, Plus, CreditCard as CardIcon
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
@@ -21,6 +22,12 @@ const Account = () => {
   const [displayName, setDisplayName] = useState(profile?.display_name || "");
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<"general" | "security" | "billing">("general");
+
+  // Estados para Modais de Edição
+  const [editingField, setEditingField] = useState<string | null>(null);
+  const [newValue, setNewValue] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [isActionLoading, setIsActionLoading] = useState(false);
 
   useEffect(() => {
     if (!user && !isLoading) {
@@ -68,24 +75,45 @@ const Account = () => {
     }
   };
 
-  const handlePasswordReset = async () => {
-    if (!user?.email) return;
-    
+  const handleUpdateEmail = async () => {
+    if (!newValue.includes("@")) {
+      toast({ title: "E-mail inválido", description: "Por favor, insira um e-mail válido.", variant: "destructive" });
+      return;
+    }
+
+    setIsActionLoading(true);
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
-        redirectTo: `${window.location.origin}/auth?type=recovery`,
-      });
+      const { error } = await supabase.auth.updateUser({ email: newValue });
       if (error) throw error;
       toast({ 
-        title: "E-mail enviado!", 
-        description: "Enviamos um link para redefinir sua senha no seu e-mail." 
+        title: "Verifique seu e-mail", 
+        description: "Enviamos um link de confirmação para o novo endereço de e-mail." 
       });
-    } catch (error) {
-      toast({ 
-        title: "Erro", 
-        description: "Não foi possível enviar o e-mail de recuperação.", 
-        variant: "destructive" 
-      });
+      setEditingField(null);
+    } catch (error: any) {
+      toast({ title: "Erro", description: error.message || "Não foi possível atualizar o e-mail.", variant: "destructive" });
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
+
+  const handleUpdatePassword = async () => {
+    if (newValue.length < 6) {
+      toast({ title: "Senha fraca", description: "A senha deve ter pelo menos 6 caracteres.", variant: "destructive" });
+      return;
+    }
+
+    setIsActionLoading(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newValue });
+      if (error) throw error;
+      toast({ title: "Senha atualizada!", description: "Sua senha foi alterada com sucesso." });
+      setEditingField(null);
+      setNewValue("");
+    } catch (error: any) {
+      toast({ title: "Erro", description: error.message || "Não foi possível atualizar a senha.", variant: "destructive" });
+    } finally {
+      setIsActionLoading(false);
     }
   };
 
@@ -96,13 +124,72 @@ const Account = () => {
     if (!confirm) return;
 
     try {
-      // Aqui você implementaria a lógica de deletar da tabela de histórico se ela existir
-      // Exemplo: await supabase.from('view_history').delete().eq('user_id', user.id);
       toast({ title: "Histórico limpo", description: "Seu histórico de visualização foi apagado." });
     } catch (error) {
       toast({ title: "Erro", description: "Não foi possível limpar o histórico.", variant: "destructive" });
     }
   };
+
+  const renderModal = () => (
+    <AnimatePresence>
+      {editingField && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setEditingField(null)}
+            className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+          />
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            className="relative w-full max-w-md bg-zinc-900 border border-white/10 rounded-[2.5rem] p-10 shadow-2xl"
+          >
+            <button 
+              onClick={() => setEditingField(null)}
+              className="absolute top-6 right-6 p-2 rounded-full hover:bg-white/5 text-muted-foreground hover:text-white transition-all"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <h3 className="text-2xl font-black text-white uppercase tracking-tighter italic mb-2">
+              {editingField === "email" ? "Alterar E-mail" : "Alterar Senha"}
+            </h3>
+            <p className="text-muted-foreground text-sm font-bold mb-8">
+              {editingField === "email" 
+                ? "Insira seu novo endereço de e-mail. Você precisará confirmá-lo." 
+                : "Crie uma nova senha forte para proteger sua conta."}
+            </p>
+
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-2">
+                  {editingField === "email" ? "Novo E-mail" : "Nova Senha"}
+                </label>
+                <Input 
+                  type={editingField === "email" ? "email" : "password"}
+                  value={newValue}
+                  onChange={(e) => setNewValue(e.target.value)}
+                  placeholder={editingField === "email" ? "exemplo@email.com" : "••••••••"}
+                  className="bg-white/5 border-white/10 h-14 rounded-2xl px-6 font-bold focus:ring-primary/50"
+                />
+              </div>
+
+              <Button 
+                onClick={editingField === "email" ? handleUpdateEmail : handleUpdatePassword}
+                disabled={isActionLoading}
+                className="w-full bg-primary text-white h-14 rounded-2xl font-black uppercase tracking-tighter italic text-lg shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+              >
+                {isActionLoading ? <Loader2 className="w-6 h-6 animate-spin" /> : "Confirmar Alteração"}
+              </Button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+  );
 
   if (isLoading) {
     return (
@@ -115,6 +202,7 @@ const Account = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
+      {renderModal()}
 
       <div className="max-w-6xl mx-auto px-6 py-32">
         <motion.div
@@ -238,14 +326,14 @@ const Account = () => {
               </button>
             </div>
 
-            <div className="bg-white/5 rounded-[2.5rem] border border-white/10 p-10 backdrop-blur-xl">
+            <div className="bg-white/5 rounded-[2.5rem] border border-white/10 p-10 backdrop-blur-xl min-h-[500px]">
               {activeTab === "general" && (
-                <div className="space-y-6">
+                <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
                   <h3 className="text-xl font-black text-white uppercase tracking-tighter italic mb-8 flex items-center gap-3">
                     <Settings className="w-6 h-6 text-primary" /> Configurações Gerais
                   </h3>
                   <div className="space-y-4">
-                    <div className="p-6 rounded-3xl bg-white/5 border border-white/5 flex items-center justify-between group">
+                    <div className="p-6 rounded-3xl bg-white/5 border border-white/5 flex items-center justify-between group hover:bg-white/10 transition-all">
                       <div className="flex items-center gap-5">
                         <div className="p-3 rounded-2xl bg-white/5 text-primary"><Mail className="w-5 h-5" /></div>
                         <div>
@@ -253,9 +341,18 @@ const Account = () => {
                           <p className="text-muted-foreground text-xs font-bold">{user?.email}</p>
                         </div>
                       </div>
-                      <Button variant="ghost" className="text-primary font-bold text-xs uppercase tracking-widest hover:bg-primary/10" onClick={() => toast({ title: "Aviso", description: "A alteração de e-mail deve ser feita via suporte." })}>Alterar</Button>
+                      <Button 
+                        variant="ghost" 
+                        className="text-primary font-black text-xs uppercase tracking-widest hover:bg-primary/10 px-6 h-10 rounded-xl" 
+                        onClick={() => {
+                          setEditingField("email");
+                          setNewValue(user?.email || "");
+                        }}
+                      >
+                        Alterar
+                      </Button>
                     </div>
-                    <div className="p-6 rounded-3xl bg-white/5 border border-white/5 flex items-center justify-between group">
+                    <div className="p-6 rounded-3xl bg-white/5 border border-white/5 flex items-center justify-between group hover:bg-white/10 transition-all">
                       <div className="flex items-center gap-5">
                         <div className="p-3 rounded-2xl bg-white/5 text-accent"><Globe className="w-5 h-5" /></div>
                         <div>
@@ -263,9 +360,9 @@ const Account = () => {
                           <p className="text-muted-foreground text-xs font-bold">Português (Brasil)</p>
                         </div>
                       </div>
-                      <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                      <Button variant="ghost" className="text-accent font-black text-xs uppercase tracking-widest hover:bg-accent/10 px-6 h-10 rounded-xl">Mudar</Button>
                     </div>
-                    <div className="p-6 rounded-3xl bg-white/5 border border-white/5 flex items-center justify-between group">
+                    <div className="p-6 rounded-3xl bg-white/5 border border-white/5 flex items-center justify-between group hover:bg-white/10 transition-all">
                       <div className="flex items-center gap-5">
                         <div className="p-3 rounded-2xl bg-white/5 text-blue-400"><Smartphone className="w-5 h-5" /></div>
                         <div>
@@ -273,73 +370,80 @@ const Account = () => {
                           <p className="text-muted-foreground text-xs font-bold">3 dispositivos ativos</p>
                         </div>
                       </div>
-                      <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                      <Button variant="ghost" className="text-blue-400 font-black text-xs uppercase tracking-widest hover:bg-blue-400/10 px-6 h-10 rounded-xl">Gerenciar</Button>
                     </div>
                   </div>
-                </div>
+                </motion.div>
               )}
 
               {activeTab === "security" && (
-                <div className="space-y-6">
+                <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
                   <h3 className="text-xl font-black text-white uppercase tracking-tighter italic mb-8 flex items-center gap-3">
                     <Shield className="w-6 h-6 text-green-400" /> Segurança e Privacidade
                   </h3>
                   <div className="space-y-4">
-                    <button 
-                      onClick={handlePasswordReset}
-                      className="w-full p-6 rounded-3xl bg-white/5 border border-white/5 flex items-center justify-between hover:bg-white/10 transition-all group"
-                    >
+                    <div className="p-6 rounded-3xl bg-white/5 border border-white/5 flex items-center justify-between group hover:bg-white/10 transition-all">
                       <div className="flex items-center gap-5">
-                        <div className="p-3 rounded-2xl bg-white/5 text-green-400 group-hover:bg-green-400/20"><Key className="w-5 h-5" /></div>
-                        <div className="text-left">
-                          <p className="text-white font-black uppercase tracking-tighter italic">Alterar Senha</p>
-                          <p className="text-muted-foreground text-xs font-bold">Redefina sua senha de acesso</p>
+                        <div className="p-3 rounded-2xl bg-white/5 text-green-400"><Key className="w-5 h-5" /></div>
+                        <div>
+                          <p className="text-white font-black uppercase tracking-tighter italic">Senha de Acesso</p>
+                          <p className="text-muted-foreground text-xs font-bold">Atualizada recentemente</p>
                         </div>
                       </div>
-                      <ChevronRight className="w-5 h-5 text-muted-foreground" />
-                    </button>
-                    <div className="p-6 rounded-3xl bg-white/5 border border-white/5 flex items-center justify-between group">
+                      <Button 
+                        variant="ghost" 
+                        className="text-green-400 font-black text-xs uppercase tracking-widest hover:bg-green-400/10 px-6 h-10 rounded-xl"
+                        onClick={() => {
+                          setEditingField("password");
+                          setNewValue("");
+                        }}
+                      >
+                        Alterar
+                      </Button>
+                    </div>
+                    <div className="p-6 rounded-3xl bg-white/5 border border-white/5 flex items-center justify-between group hover:bg-white/10 transition-all">
                       <div className="flex items-center gap-5">
                         <div className="p-3 rounded-2xl bg-white/5 text-orange-400"><Shield className="w-5 h-5" /></div>
                         <div>
                           <p className="text-white font-black uppercase tracking-tighter italic">Autenticação em Duas Etapas</p>
-                          <p className="text-muted-foreground text-xs font-bold">Desativado</p>
+                          <p className="text-muted-foreground text-xs font-bold">Proteção extra para sua conta</p>
                         </div>
                       </div>
-                      <Button variant="ghost" className="text-orange-400 font-bold text-xs uppercase tracking-widest hover:bg-orange-400/10">Ativar</Button>
+                      <Button variant="ghost" className="text-orange-400 font-black text-xs uppercase tracking-widest hover:bg-orange-400/10 px-6 h-10 rounded-xl">Ativar</Button>
                     </div>
                   </div>
-                </div>
+                </motion.div>
               )}
 
               {activeTab === "billing" && (
-                <div className="space-y-6">
+                <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
                   <h3 className="text-xl font-black text-white uppercase tracking-tighter italic mb-8 flex items-center gap-3">
                     <CreditCard className="w-6 h-6 text-purple-400" /> Pagamento e Faturamento
                   </h3>
                   <div className="space-y-4">
-                    <div className="p-6 rounded-3xl bg-white/5 border border-white/5 flex items-center justify-between group">
-                      <div className="flex items-center gap-5">
-                        <div className="p-3 rounded-2xl bg-white/5 text-purple-400"><CreditCard className="w-5 h-5" /></div>
-                        <div>
-                          <p className="text-white font-black uppercase tracking-tighter italic">Cartão Principal</p>
-                          <p className="text-muted-foreground text-xs font-bold">Visa final 4242</p>
+                    <div className="p-8 rounded-[2rem] bg-gradient-to-br from-purple-500/20 to-primary/20 border border-white/10 relative overflow-hidden group">
+                      <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-all">
+                        <CardIcon className="w-24 h-24" />
+                      </div>
+                      <div className="relative">
+                        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-purple-300 mb-4">Cartão Principal</p>
+                        <div className="flex items-center gap-4 mb-6">
+                          <div className="w-12 h-8 bg-white/10 rounded-md flex items-center justify-center font-bold text-[10px]">VISA</div>
+                          <p className="text-xl font-black text-white tracking-widest">•••• •••• •••• 4242</p>
+                        </div>
+                        <div className="flex gap-3">
+                          <Button variant="outline" className="border-white/10 bg-white/5 hover:bg-white/10 text-white rounded-xl h-10 font-black uppercase tracking-tighter italic text-xs">Editar</Button>
+                          <Button variant="outline" className="border-white/10 bg-white/5 hover:bg-white/10 text-white rounded-xl h-10 font-black uppercase tracking-tighter italic text-xs">Remover</Button>
                         </div>
                       </div>
-                      <Button variant="ghost" className="text-purple-400 font-bold text-xs uppercase tracking-widest hover:bg-purple-400/10">Editar</Button>
                     </div>
-                    <div className="p-6 rounded-3xl bg-white/5 border border-white/5 flex items-center justify-between group">
-                      <div className="flex items-center gap-5">
-                        <div className="p-3 rounded-2xl bg-white/5 text-muted-foreground"><Bell className="w-5 h-5" /></div>
-                        <div>
-                          <p className="text-white font-black uppercase tracking-tighter italic">Histórico de Faturas</p>
-                          <p className="text-muted-foreground text-xs font-bold">Ver pagamentos anteriores</p>
-                        </div>
-                      </div>
-                      <ChevronRight className="w-5 h-5 text-muted-foreground" />
-                    </div>
+                    
+                    <button className="w-full p-6 rounded-3xl bg-white/5 border border-dashed border-white/10 flex items-center justify-center gap-3 hover:bg-white/10 transition-all group">
+                      <Plus className="w-5 h-5 text-muted-foreground group-hover:text-white transition-all" />
+                      <span className="text-xs font-black uppercase tracking-widest text-muted-foreground group-hover:text-white transition-all">Adicionar Novo Método</span>
+                    </button>
                   </div>
-                </div>
+                </motion.div>
               )}
             </div>
 
