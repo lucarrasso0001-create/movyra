@@ -223,12 +223,13 @@ const ProfileSelect = () => {
       }
 
       toast({ 
-        title: editingProfileId ? "Perfil atualizado!" : "Perfil criado!", 
-        description: "Suas alterações foram salvas." 
+        title: editingProfileId && editingProfileId !== "new" ? "Perfil atualizado!" : "Perfil criado!", 
+        description: "Suas alterações foram salvas com sucesso no banco de dados." 
       });
       
       setIsManaging(false);
       setEditingProfileId(null);
+      // Recarrega os perfis para garantir que o estado local reflita exatamente o banco de dados
       await fetchProfiles();
     } catch (err: any) {
       console.error("Erro detalhado ao salvar perfil:", err);
