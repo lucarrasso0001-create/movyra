@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { 
   Mail, Shield, CreditCard, Bell, Settings, 
   LogOut, ChevronRight, Star, Clock, Trash2, Edit2,
-  Camera, Check, X, Loader2
+  Camera, Check, X, Loader2, Key, Smartphone, Globe
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
@@ -20,12 +20,16 @@ const Account = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [displayName, setDisplayName] = useState(profile?.display_name || "");
   const [isSaving, setIsSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState<"general" | "security" | "billing">("general");
 
   useEffect(() => {
     if (!user && !isLoading) {
       navigate("/auth");
     }
-  }, [user, isLoading, navigate]);
+    if (profile?.display_name) {
+      setDisplayName(profile.display_name);
+    }
+  }, [user, isLoading, navigate, profile]);
 
   const handleSignOut = async () => {
     try {
@@ -61,6 +65,42 @@ const Account = () => {
       toast({ title: "Erro ao salvar", description: "Não foi possível atualizar o perfil.", variant: "destructive" });
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handlePasswordReset = async () => {
+    if (!user?.email) return;
+    
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
+        redirectTo: `${window.location.origin}/auth?type=recovery`,
+      });
+      if (error) throw error;
+      toast({ 
+        title: "E-mail enviado!", 
+        description: "Enviamos um link para redefinir sua senha no seu e-mail." 
+      });
+    } catch (error) {
+      toast({ 
+        title: "Erro", 
+        description: "Não foi possível enviar o e-mail de recuperação.", 
+        variant: "destructive" 
+      });
+    }
+  };
+
+  const handleClearHistory = async () => {
+    if (!user) return;
+    
+    const confirm = window.confirm("Tem certeza que deseja limpar todo o seu histórico de visualização? Esta ação não pode ser desfeita.");
+    if (!confirm) return;
+
+    try {
+      // Aqui você implementaria a lógica de deletar da tabela de histórico se ela existir
+      // Exemplo: await supabase.from('view_history').delete().eq('user_id', user.id);
+      toast({ title: "Histórico limpo", description: "Seu histórico de visualização foi apagado." });
+    } catch (error) {
+      toast({ title: "Erro", description: "Não foi possível limpar o histórico.", variant: "destructive" });
     }
   };
 
@@ -165,7 +205,10 @@ const Account = () => {
                 </div>
                 <p className="text-white/70 text-xs font-bold">Próxima renovação: 15 Abr 2026</p>
               </div>
-              <Button className="w-full bg-white text-black hover:bg-primary hover:text-white rounded-2xl h-12 font-black uppercase tracking-tighter italic transition-all">
+              <Button 
+                onClick={() => toast({ title: "Em breve", description: "O gerenciamento de assinatura estará disponível em breve." })}
+                className="w-full bg-white text-black hover:bg-primary hover:text-white rounded-2xl h-12 font-black uppercase tracking-tighter italic transition-all"
+              >
                 Gerenciar Plano
               </Button>
             </div>
@@ -173,35 +216,131 @@ const Account = () => {
 
           {/* Configurações e Opções */}
           <div className="lg:col-span-2 space-y-8">
-            <div className="bg-white/5 rounded-[2.5rem] border border-white/10 p-10 backdrop-blur-xl">
-              <h3 className="text-xl font-black text-white uppercase tracking-tighter italic mb-8 flex items-center gap-3">
-                <Settings className="w-6 h-6 text-primary" /> Configurações Gerais
-              </h3>
+            {/* Tabs de Navegação Interna */}
+            <div className="flex gap-4 p-2 bg-white/5 rounded-3xl border border-white/10 w-fit">
+              <button 
+                onClick={() => setActiveTab("general")}
+                className={`px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === "general" ? "bg-primary text-white shadow-lg" : "text-muted-foreground hover:text-white"}`}
+              >
+                Geral
+              </button>
+              <button 
+                onClick={() => setActiveTab("security")}
+                className={`px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === "security" ? "bg-primary text-white shadow-lg" : "text-muted-foreground hover:text-white"}`}
+              >
+                Segurança
+              </button>
+              <button 
+                onClick={() => setActiveTab("billing")}
+                className={`px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === "billing" ? "bg-primary text-white shadow-lg" : "text-muted-foreground hover:text-white"}`}
+              >
+                Pagamento
+              </button>
+            </div>
 
-              <div className="space-y-4">
-                {[
-                  { icon: Mail, label: "Alterar E-mail", desc: user?.email },
-                  { icon: Shield, label: "Segurança e Senha", desc: "Atualizada há 3 meses" },
-                  { icon: CreditCard, label: "Métodos de Pagamento", desc: "Visa final 4242" },
-                  { icon: Bell, label: "Notificações", desc: "E-mail e Push ativados" },
-                ].map((item, i) => (
-                  <button 
-                    key={i}
-                    className="w-full flex items-center justify-between p-6 rounded-3xl bg-white/5 hover:bg-white/10 border border-transparent hover:border-white/10 transition-all group"
-                  >
-                    <div className="flex items-center gap-5 text-left">
-                      <div className="p-3 rounded-2xl bg-white/5 group-hover:bg-primary/20 group-hover:text-primary transition-all">
-                        <item.icon className="w-5 h-5" />
+            <div className="bg-white/5 rounded-[2.5rem] border border-white/10 p-10 backdrop-blur-xl">
+              {activeTab === "general" && (
+                <div className="space-y-6">
+                  <h3 className="text-xl font-black text-white uppercase tracking-tighter italic mb-8 flex items-center gap-3">
+                    <Settings className="w-6 h-6 text-primary" /> Configurações Gerais
+                  </h3>
+                  <div className="space-y-4">
+                    <div className="p-6 rounded-3xl bg-white/5 border border-white/5 flex items-center justify-between group">
+                      <div className="flex items-center gap-5">
+                        <div className="p-3 rounded-2xl bg-white/5 text-primary"><Mail className="w-5 h-5" /></div>
+                        <div>
+                          <p className="text-white font-black uppercase tracking-tighter italic">E-mail da Conta</p>
+                          <p className="text-muted-foreground text-xs font-bold">{user?.email}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-white font-black uppercase tracking-tighter italic">{item.label}</p>
-                        <p className="text-muted-foreground text-xs font-bold">{item.desc}</p>
-                      </div>
+                      <Button variant="ghost" className="text-primary font-bold text-xs uppercase tracking-widest hover:bg-primary/10" onClick={() => toast({ title: "Aviso", description: "A alteração de e-mail deve ser feita via suporte." })}>Alterar</Button>
                     </div>
-                    <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-white group-hover:translate-x-1 transition-all" />
-                  </button>
-                ))}
-              </div>
+                    <div className="p-6 rounded-3xl bg-white/5 border border-white/5 flex items-center justify-between group">
+                      <div className="flex items-center gap-5">
+                        <div className="p-3 rounded-2xl bg-white/5 text-accent"><Globe className="w-5 h-5" /></div>
+                        <div>
+                          <p className="text-white font-black uppercase tracking-tighter italic">Idioma do App</p>
+                          <p className="text-muted-foreground text-xs font-bold">Português (Brasil)</p>
+                        </div>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                    </div>
+                    <div className="p-6 rounded-3xl bg-white/5 border border-white/5 flex items-center justify-between group">
+                      <div className="flex items-center gap-5">
+                        <div className="p-3 rounded-2xl bg-white/5 text-blue-400"><Smartphone className="w-5 h-5" /></div>
+                        <div>
+                          <p className="text-white font-black uppercase tracking-tighter italic">Dispositivos Conectados</p>
+                          <p className="text-muted-foreground text-xs font-bold">3 dispositivos ativos</p>
+                        </div>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === "security" && (
+                <div className="space-y-6">
+                  <h3 className="text-xl font-black text-white uppercase tracking-tighter italic mb-8 flex items-center gap-3">
+                    <Shield className="w-6 h-6 text-green-400" /> Segurança e Privacidade
+                  </h3>
+                  <div className="space-y-4">
+                    <button 
+                      onClick={handlePasswordReset}
+                      className="w-full p-6 rounded-3xl bg-white/5 border border-white/5 flex items-center justify-between hover:bg-white/10 transition-all group"
+                    >
+                      <div className="flex items-center gap-5">
+                        <div className="p-3 rounded-2xl bg-white/5 text-green-400 group-hover:bg-green-400/20"><Key className="w-5 h-5" /></div>
+                        <div className="text-left">
+                          <p className="text-white font-black uppercase tracking-tighter italic">Alterar Senha</p>
+                          <p className="text-muted-foreground text-xs font-bold">Redefina sua senha de acesso</p>
+                        </div>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                    </button>
+                    <div className="p-6 rounded-3xl bg-white/5 border border-white/5 flex items-center justify-between group">
+                      <div className="flex items-center gap-5">
+                        <div className="p-3 rounded-2xl bg-white/5 text-orange-400"><Shield className="w-5 h-5" /></div>
+                        <div>
+                          <p className="text-white font-black uppercase tracking-tighter italic">Autenticação em Duas Etapas</p>
+                          <p className="text-muted-foreground text-xs font-bold">Desativado</p>
+                        </div>
+                      </div>
+                      <Button variant="ghost" className="text-orange-400 font-bold text-xs uppercase tracking-widest hover:bg-orange-400/10">Ativar</Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === "billing" && (
+                <div className="space-y-6">
+                  <h3 className="text-xl font-black text-white uppercase tracking-tighter italic mb-8 flex items-center gap-3">
+                    <CreditCard className="w-6 h-6 text-purple-400" /> Pagamento e Faturamento
+                  </h3>
+                  <div className="space-y-4">
+                    <div className="p-6 rounded-3xl bg-white/5 border border-white/5 flex items-center justify-between group">
+                      <div className="flex items-center gap-5">
+                        <div className="p-3 rounded-2xl bg-white/5 text-purple-400"><CreditCard className="w-5 h-5" /></div>
+                        <div>
+                          <p className="text-white font-black uppercase tracking-tighter italic">Cartão Principal</p>
+                          <p className="text-muted-foreground text-xs font-bold">Visa final 4242</p>
+                        </div>
+                      </div>
+                      <Button variant="ghost" className="text-purple-400 font-bold text-xs uppercase tracking-widest hover:bg-purple-400/10">Editar</Button>
+                    </div>
+                    <div className="p-6 rounded-3xl bg-white/5 border border-white/5 flex items-center justify-between group">
+                      <div className="flex items-center gap-5">
+                        <div className="p-3 rounded-2xl bg-white/5 text-muted-foreground"><Bell className="w-5 h-5" /></div>
+                        <div>
+                          <p className="text-white font-black uppercase tracking-tighter italic">Histórico de Faturas</p>
+                          <p className="text-muted-foreground text-xs font-bold">Ver pagamentos anteriores</p>
+                        </div>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="bg-white/5 rounded-[2.5rem] border border-white/10 p-10 backdrop-blur-xl">
@@ -210,7 +349,10 @@ const Account = () => {
               </h3>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <button className="flex items-center gap-4 p-6 rounded-3xl bg-white/5 hover:bg-white/10 border border-transparent hover:border-white/10 transition-all text-left group">
+                <button 
+                  onClick={handleClearHistory}
+                  className="flex items-center gap-4 p-6 rounded-3xl bg-white/5 hover:bg-white/10 border border-transparent hover:border-white/10 transition-all text-left group"
+                >
                   <div className="p-3 rounded-2xl bg-white/5 group-hover:bg-accent/20 group-hover:text-accent transition-all">
                     <Trash2 className="w-5 h-5" />
                   </div>
