@@ -408,7 +408,6 @@ const ProfileSelect = () => {
                 {([
                   { id: "profile", icon: Pencil, label: "Perfil" },
                   { id: "parental", icon: Shield, label: "Parental" },
-                  { id: "theme", icon: Palette, label: "Tema" },
                 ] as { id: ManageTab; icon: React.ElementType; label: string }[]).map(tab => (
                   <button
                     key={tab.id}
@@ -581,37 +580,7 @@ const ProfileSelect = () => {
                   </motion.div>
                 )}
 
-                {activeTab === "theme" && (
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
-                    <p className="text-sm" style={{ color: "hsl(var(--muted-foreground))" }}>
-                      Escolha o visual da plataforma
-                    </p>
-                    <div className="grid grid-cols-2 gap-3">
-                      {(Object.entries(THEMES) as [AppTheme, typeof THEMES[AppTheme]][]).map(([key, cfg]) => (
-                        <button
-                          key={key}
-                          onClick={() => setTheme(key)}
-                          className="rounded-xl p-4 text-left transition-all border-2"
-                          style={{
-                            background: `hsl(${cfg.background})`,
-                            borderColor: theme === key ? `hsl(${cfg.primary})` : "transparent",
-                          }}
-                        >
-                          <div className="flex items-center gap-2 mb-2">
-                            <div className="w-4 h-4 rounded-full" style={{ background: `hsl(${cfg.primary})` }} />
-                            <div className="w-4 h-4 rounded-full" style={{ background: `hsl(${cfg.accent})` }} />
-                          </div>
-                          <p className="text-sm font-bold" style={{ color: `hsl(${cfg.foreground})` }}>
-                            {cfg.name}
-                          </p>
-                          {theme === key && (
-                            <Check className="w-4 h-4 mt-1" style={{ color: `hsl(${cfg.primary})` }} />
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  </motion.div>
-                )}
+
               </div>
 
               <div className="flex gap-3 p-4 border-t" style={{ borderColor: "hsl(var(--border))" }}>
