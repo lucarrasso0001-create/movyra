@@ -2,23 +2,28 @@ import { usePopularMovies, usePopularTV, useTopRatedMovies, useTopRatedTV } from
 import Navbar from "@/components/Navbar";
 import MovieCard from "@/components/MovieCard";
 import MovieCarousel from "@/components/MovieCarousel";
-import { TrendingUp, Flame, Trophy, Star } from "lucide-react";
+import { TrendingUp, Flame, Trophy } from "lucide-react";
 import { motion } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useMemo } from "react";
 
 const Trending = () => {
-  // Buscar diferentes fontes de dados para criar uma página rica
+  // Buscar fontes de dados de forma independente para que o React Query gerencie o cache
   const { data: popularMovies, isLoading: loadingMovies } = usePopularMovies();
   const { data: popularTV, isLoading: loadingTV } = usePopularTV();
   const { data: topMovies, isLoading: loadingTopMovies } = useTopRatedMovies();
   const { data: topTV, isLoading: loadingTopTV } = useTopRatedTV();
 
   // Criar o Top 10 da Semana (Mix de Filmes e Séries Populares)
-  const top10 = [...(popularMovies || []), ...(popularTV || [])]
-    .sort((a, b) => (b.rating || 0) - (a.rating || 0))
-    .slice(0, 10);
+  // Usamos useMemo para evitar reprocessamento desnecessário
+  const top10 = useMemo(() => {
+    const combined = [...(popularMovies || []), ...(popularTV || [])];
+    return combined
+      .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+      .slice(0, 10);
+  }, [popularMovies, popularTV]);
 
-  const isLoading = loadingMovies || loadingTV || loadingTopMovies || loadingTopTV;
+  const isLoading = loadingMovies || loadingTV;
 
   return (
     <div className="min-h-screen bg-background">
@@ -84,7 +89,7 @@ const Trending = () => {
           </div>
         </section>
 
-        {/* Seções de Carrosséis */}
+        {/* Seções de Carrosséis - Carregamento Progressivo */}
         <div className="space-y-4">
           <MovieCarousel 
             title="Filmes em Alta" 
@@ -100,19 +105,24 @@ const Trending = () => {
             categorySlug="popular-tv"
           />
 
-          <MovieCarousel 
-            title="Aclamados pela Crítica" 
-            movies={topMovies || []} 
-            isLoading={loadingTopMovies}
-            categorySlug="top-rated-movies"
-          />
+          {/* Carrosséis secundários carregam apenas se os dados estiverem prontos */}
+          {(topMovies || loadingTopMovies) && (
+            <MovieCarousel 
+              title="Aclamados pela Crítica" 
+              movies={topMovies || []} 
+              isLoading={loadingTopMovies}
+              categorySlug="top-rated-movies"
+            />
+          )}
 
-          <MovieCarousel 
-            title="Séries Imperdíveis" 
-            movies={topTV || []} 
-            isLoading={loadingTopTV}
-            categorySlug="top-rated-tv"
-          />
+          {(topTV || loadingTopTV) && (
+            <MovieCarousel 
+              title="Séries Imperdíveis" 
+              movies={topTV || []} 
+              isLoading={loadingTopTV}
+              categorySlug="top-rated-tv"
+            />
+          )}
         </div>
 
         {/* Grid Final de Tendências */}

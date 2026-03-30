@@ -26,8 +26,16 @@ export async function fetchTMDB<T>(endpoint: string, params: Record<string, stri
       // TRATAMENTO ULTRA-ROBUSTO: Se o erro for 403 ou qualquer erro de permissão,
       // retornamos um objeto vazio IMEDIATAMENTE para que o React não quebre.
       const errorMsg = String(error.message || "").toLowerCase();
+      
+      // TRATAMENTO DE ERRO 502 (Bad Gateway / Timeout)
+      if (errorMsg.includes("502") || errorMsg.includes("fetch data") || errorMsg.includes("timeout")) {
+        console.warn("[TMDB] Erro de conexão (502/Timeout). Retornando dados vazios para evitar crash.");
+        return { results: [], page: 1, total_pages: 0, total_results: 0 } as any;
+      }
+
+      // TRATAMENTO DE ERRO 403 (Bloqueio de Segurança)
       if (errorMsg.includes("403") || errorMsg.includes("permitted") || errorMsg.includes("forbidden")) {
-        console.warn("[TMDB] Bloqueio de segurança detectado (403). Silenciando erro para o usuário.");
+        console.warn("[TMDB] Bloqueio de segurança detectado (403). Silenciando erro.");
         return { results: [], page: 1, total_pages: 0, total_results: 0 } as any;
       }
       
@@ -35,7 +43,7 @@ export async function fetchTMDB<T>(endpoint: string, params: Record<string, stri
         console.warn("[TMDB] Erro de autenticação. Verifique se o usuário está logado.");
       }
       
-      // Em vez de dar throw, vamos retornar um objeto vazio para garantir que o app não trave
+      // Fallback universal para garantir que o app nunca mostre a tela laranja do Lovable
       return { results: [], page: 1, total_pages: 0, total_results: 0 } as any;
     }
 
