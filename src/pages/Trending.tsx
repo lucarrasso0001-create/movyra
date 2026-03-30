@@ -1,29 +1,32 @@
-import { usePopularMovies, usePopularTV } from "@/hooks/useTMDB";
+import { usePopularMovies, usePopularTV, useTopRatedMovies, useTopRatedTV } from "@/hooks/useTMDB";
 import Navbar from "@/components/Navbar";
 import MovieCard from "@/components/MovieCard";
-import { TrendingUp, Flame, Trophy } from "lucide-react";
+import MovieCarousel from "@/components/MovieCarousel";
+import { TrendingUp, Flame, Trophy, Star } from "lucide-react";
 import { motion } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const Trending = () => {
-  // Usar hooks que já estão validados e funcionando em outras partes do site
+  // Buscar diferentes fontes de dados para criar uma página rica
   const { data: popularMovies, isLoading: loadingMovies } = usePopularMovies();
   const { data: popularTV, isLoading: loadingTV } = usePopularTV();
+  const { data: topMovies, isLoading: loadingTopMovies } = useTopRatedMovies();
+  const { data: topTV, isLoading: loadingTopTV } = useTopRatedTV();
 
-  // Combinar e embaralhar para simular tendências gerais
-  const trendingAll = [...(popularMovies || []), ...(popularTV || [])]
-    .sort(() => Math.random() - 0.5)
-    .slice(0, 20);
+  // Criar o Top 10 da Semana (Mix de Filmes e Séries Populares)
+  const top10 = [...(popularMovies || []), ...(popularTV || [])]
+    .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+    .slice(0, 10);
 
-  const isLoading = loadingMovies || loadingTV;
+  const isLoading = loadingMovies || loadingTV || loadingTopMovies || loadingTopTV;
 
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
       
-      <main className="pt-24 pb-12 px-6 md:px-12">
+      <main className="pt-24 pb-12">
         {/* Header da Página */}
-        <div className="mb-12">
+        <div className="px-6 md:px-12 mb-12">
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -43,36 +46,36 @@ const Trending = () => {
           </motion.div>
         </div>
 
-        {/* Top 10 da Semana (Destaque) */}
+        {/* Top 10 da Semana (Destaque com Ranking Visual) */}
         <section className="mb-16">
-          <div className="flex items-center gap-2 mb-8">
+          <div className="px-6 md:px-12 flex items-center gap-2 mb-8">
             <Trophy className="w-5 h-5 text-yellow-500" />
-            <h2 className="text-2xl font-black text-white uppercase tracking-tight">Top 10 da Semana</h2>
+            <h2 className="text-2xl font-black text-white uppercase tracking-tight italic">Top 10 da Semana</h2>
           </div>
 
-          <div className="flex gap-6 overflow-x-auto pb-8 scrollbar-hide">
+          <div className="flex gap-8 overflow-x-auto px-6 md:px-12 pb-12 scrollbar-hide">
             {isLoading ? (
               Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="min-w-[200px] aspect-[2/3]">
+                <div key={i} className="min-w-[240px] aspect-[2/3]">
                   <Skeleton className="w-full h-full rounded-2xl bg-white/5" />
                 </div>
               ))
             ) : (
-              trendingAll.slice(0, 10).map((item, index) => (
+              top10.map((item, index) => (
                 <motion.div 
                   key={item.id}
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: index * 0.1 }}
-                  className="relative min-w-[200px] group"
+                  className="relative min-w-[240px] group"
                 >
-                  {/* Número do Ranking */}
-                  <div className="absolute -left-4 -bottom-4 z-10 select-none pointer-events-none">
-                    <span className="text-[120px] font-black leading-none text-white/10 group-hover:text-primary/20 transition-colors italic tracking-tighter">
+                  {/* Número do Ranking Estilizado */}
+                  <div className="absolute -left-6 -bottom-6 z-10 select-none pointer-events-none">
+                    <span className="text-[160px] font-black leading-none text-white/10 group-hover:text-primary/30 transition-all duration-500 italic tracking-tighter stroke-text">
                       {index + 1}
                     </span>
                   </div>
-                  <div className="relative z-20">
+                  <div className="relative z-20 transform group-hover:scale-105 transition-transform duration-500">
                     <MovieCard movie={item} />
                   </div>
                 </motion.div>
@@ -81,24 +84,48 @@ const Trending = () => {
           </div>
         </section>
 
-        {/* Tendências de Hoje (Grid) */}
-        <section>
+        {/* Seções de Carrosséis */}
+        <div className="space-y-4">
+          <MovieCarousel 
+            title="Filmes em Alta" 
+            movies={popularMovies || []} 
+            isLoading={loadingMovies}
+            categorySlug="popular-movies"
+          />
+
+          <MovieCarousel 
+            title="Séries que Todos Amam" 
+            movies={popularTV || []} 
+            isLoading={loadingTV}
+            categorySlug="popular-tv"
+          />
+
+          <MovieCarousel 
+            title="Aclamados pela Crítica" 
+            movies={topMovies || []} 
+            isLoading={loadingTopMovies}
+            categorySlug="top-rated-movies"
+          />
+
+          <MovieCarousel 
+            title="Séries Imperdíveis" 
+            movies={topTV || []} 
+            isLoading={loadingTopTV}
+            categorySlug="top-rated-tv"
+          />
+        </div>
+
+        {/* Grid Final de Tendências */}
+        <section className="mt-16 px-6 md:px-12">
           <div className="flex items-center gap-2 mb-8">
             <TrendingUp className="w-5 h-5 text-primary" />
-            <h2 className="text-2xl font-black text-white uppercase tracking-tight">Bombando Hoje</h2>
+            <h2 className="text-2xl font-black text-white uppercase tracking-tight italic">Mais Tendências</h2>
           </div>
 
-          {isLoading ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
-              {Array.from({ length: 12 }).map((_, i) => (
-                <div key={i} className="aspect-[2/3]">
-                  <Skeleton className="w-full h-full rounded-2xl bg-white/5" />
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
-              {trendingAll.slice(10).map((item, index) => (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+            {[...(popularMovies || []), ...(popularTV || [])]
+              .slice(10, 22)
+              .map((item, index) => (
                 <motion.div
                   key={item.id}
                   initial={{ opacity: 0, y: 20 }}
@@ -108,10 +135,16 @@ const Trending = () => {
                   <MovieCard movie={item} />
                 </motion.div>
               ))}
-            </div>
-          )}
+          </div>
         </section>
       </main>
+
+      <style>{`
+        .stroke-text {
+          -webkit-text-stroke: 2px rgba(255, 255, 255, 0.1);
+          text-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+      `}</style>
     </div>
   );
 };
