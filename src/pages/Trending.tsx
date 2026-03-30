@@ -1,22 +1,30 @@
 import { useQuery } from "@tanstack/react-query";
 import Navbar from "@/components/Navbar";
 import MovieCard from "@/components/MovieCard";
-import { fetchTrending } from "@/hooks/useTMDB";
+import { fetchMovies, fetchTVShows } from "@/hooks/useTMDB";
 import { TrendingUp, Flame, Trophy } from "lucide-react";
 import { motion } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const Trending = () => {
-  // Buscar tendências do dia e da semana
-  const { data: trendingToday, isLoading: loadingToday } = useQuery({
-    queryKey: ["trending-today"],
-    queryFn: () => fetchTrending("day"),
+  // Usar endpoints que temos certeza que estão liberados na Edge Function (popular)
+  // em vez de /trending/all que está dando erro 403
+  const { data: popularMovies, isLoading: loadingMovies } = useQuery({
+    queryKey: ["trending-movies-popular"],
+    queryFn: () => fetchMovies("popular"),
   });
 
-  const { data: trendingWeek, isLoading: loadingWeek } = useQuery({
-    queryKey: ["trending-week"],
-    queryFn: () => fetchTrending("week"),
+  const { data: popularTV, isLoading: loadingTV } = useQuery({
+    queryKey: ["trending-tv-popular"],
+    queryFn: () => fetchTVShows("popular"),
   });
+
+  // Combinar e embaralhar para simular tendências gerais
+  const trendingAll = [...(popularMovies || []), ...(popularTV || [])]
+    .sort(() => Math.random() - 0.5)
+    .slice(0, 20);
+
+  const isLoading = loadingMovies || loadingTV;
 
   return (
     <div className="min-h-screen bg-background">
@@ -52,14 +60,14 @@ const Trending = () => {
           </div>
 
           <div className="flex gap-6 overflow-x-auto pb-8 scrollbar-hide">
-            {loadingWeek ? (
+            {isLoading ? (
               Array.from({ length: 6 }).map((_, i) => (
                 <div key={i} className="min-w-[200px] aspect-[2/3]">
                   <Skeleton className="w-full h-full rounded-2xl bg-white/5" />
                 </div>
               ))
             ) : (
-              trendingWeek?.slice(0, 10).map((item, index) => (
+              trendingAll.slice(0, 10).map((item, index) => (
                 <motion.div 
                   key={item.id}
                   initial={{ opacity: 0, x: 20 }}
@@ -89,7 +97,7 @@ const Trending = () => {
             <h2 className="text-2xl font-black text-white uppercase tracking-tight">Bombando Hoje</h2>
           </div>
 
-          {loadingToday ? (
+          {isLoading ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
               {Array.from({ length: 12 }).map((_, i) => (
                 <div key={i} className="aspect-[2/3]">
@@ -99,7 +107,7 @@ const Trending = () => {
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
-              {trendingToday?.map((item, index) => (
+              {trendingAll.slice(10).map((item, index) => (
                 <motion.div
                   key={item.id}
                   initial={{ opacity: 0, y: 20 }}

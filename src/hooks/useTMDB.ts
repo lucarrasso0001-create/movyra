@@ -23,6 +23,12 @@ export async function fetchTMDB<T>(endpoint: string, params: Record<string, stri
 
     if (error) {
       console.error("[TMDB] Erro na Edge Function:", error);
+      // Se o erro for 403 (Endpoint not permitted), silenciamos e retornamos um objeto vazio
+      // para evitar que o site trave com a tela de erro laranja do Lovable.
+      if (error.message?.includes("403") || error.message?.includes("Endpoint not permitted")) {
+        console.warn("[TMDB] Endpoint não permitido pela Edge Function. Retornando dados vazios.");
+        return { results: [], page: 1, total_pages: 0, total_results: 0 } as any;
+      }
       if (error.message?.includes("401") || error.message?.includes("Authentication")) {
         console.warn("[TMDB] Erro de autenticação. Verifique se o usuário está logado.");
       }
