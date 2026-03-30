@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Search, Menu, X, User } from "lucide-react";
+import { Search, Menu, X, User, Settings, LogOut, UserCircle } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -13,6 +13,7 @@ const Navbar = ({ onSearchChange }: NavbarProps) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { user, signOut, profile } = useAuth();
   const navigate = useNavigate();
+  const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-white/5">
@@ -55,16 +56,74 @@ const Navbar = ({ onSearchChange }: NavbarProps) => {
           )}
 
           {user ? (
-            <div className="flex items-center gap-3">
-              <Link to="/perfis" className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center overflow-hidden">
+            <div className="relative">
+              <button 
+                onClick={() => setIsAccountMenuOpen(!isAccountMenuOpen)}
+                className="flex items-center gap-2 group"
+              >
+                <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center overflow-hidden border border-white/10 group-hover:border-primary/50 transition-all">
                   {profile?.avatar_url ? (
                     <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
                   ) : (
                     <User className="w-4 h-4 text-primary" />
                   )}
                 </div>
-              </Link>
+              </button>
+
+              <AnimatePresence>
+                {isAccountMenuOpen && (
+                  <>
+                    <div 
+                      className="fixed inset-0 z-40" 
+                      onClick={() => setIsAccountMenuOpen(false)}
+                    />
+                    <motion.div
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      className="absolute right-0 mt-2 w-56 bg-[#141414] border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden"
+                    >
+                      <div className="p-4 border-b border-white/5 bg-white/5">
+                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">Perfil Atual</p>
+                        <p className="text-sm font-black text-white truncate">{profile?.display_name || user.email}</p>
+                      </div>
+                      
+                      <div className="p-2">
+                        <Link 
+                          to="/conta" 
+                          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-bold text-white/70 hover:text-white hover:bg-white/5 transition-all"
+                          onClick={() => setIsAccountMenuOpen(false)}
+                        >
+                          <Settings className="w-4 h-4 text-primary" />
+                          Configurações da Conta
+                        </Link>
+                        <Link 
+                          to="/profile-select" 
+                          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-bold text-white/70 hover:text-white hover:bg-white/5 transition-all"
+                          onClick={() => setIsAccountMenuOpen(false)}
+                        >
+                          <UserCircle className="w-4 h-4 text-primary" />
+                          Trocar Perfil
+                        </Link>
+                      </div>
+
+                      <div className="p-2 border-t border-white/5">
+                        <button 
+                          onClick={() => {
+                            signOut();
+                            setIsAccountMenuOpen(false);
+                            navigate("/auth");
+                          }}
+                          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-bold text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all"
+                        >
+                          <LogOut className="w-4 h-4" />
+                          Sair do Movyra
+                        </button>
+                      </div>
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
             </div>
           ) : (
             <Link to="/auth" className="text-sm font-bold text-white hover:text-primary transition-colors">
