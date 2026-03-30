@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { X, Play, Pause, Volume2, VolumeX, Maximize, SkipForward, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useUpdateProgress } from "@/hooks/useWatchHistory";
-import { fetchDirectVideoLink } from "@/hooks/useTMDB";
+import { fetchDirectVideoLink, fetchBunnyVideoId } from "@/hooks/useTMDB";
 
 interface NextEpisodeInfo {
   title: string;

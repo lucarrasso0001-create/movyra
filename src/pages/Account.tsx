@@ -62,7 +62,7 @@ const Account = () => {
 
             <div className="text-center md:text-left">
               <h1 className="text-3xl font-black text-white tracking-tight uppercase mb-1">
-                {profile?.full_name || "Usuário Movyra"}
+                {profile?.display_name || "Usuário Movyra"}
               </h1>
               <p className="text-white/40 font-bold mb-4">{user?.email}</p>
               <div className="flex flex-wrap justify-center md:justify-start gap-3">

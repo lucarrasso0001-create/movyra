@@ -7,7 +7,7 @@ import { Bookmark, Heart, Play } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const MyList = () => {
-  const { data: favorites, isLoading, isError } = useFavorites();
+  const { favorites, isPending } = useFavorites();
 
   return (
     <div className="min-h-screen bg-background">
@@ -28,23 +28,13 @@ const MyList = () => {
         </div>
 
         {/* Grid */}
-        {isLoading ? (
+        {isPending ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
             {[...Array(6)].map((_, i) => (
               <div key={i} className="aspect-[2/3] rounded-xl overflow-hidden">
                 <Skeleton className="w-full h-full bg-white/5" />
               </div>
             ))}
-          </div>
-        ) : isError ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <p className="text-white/60 mb-4 font-medium">Ocorreu um erro ao carregar sua lista.</p>
-            <button 
-              onClick={() => window.location.reload()}
-              className="px-6 py-2 bg-primary text-white font-bold rounded-full hover:bg-primary/80 transition-colors"
-            >
-              Tentar Novamente
-            </button>
           </div>
         ) : favorites?.length === 0 ? (
           <motion.div 
@@ -79,7 +69,16 @@ const MyList = () => {
                   exit={{ opacity: 0, scale: 0.9 }}
                   transition={{ delay: index * 0.05 }}
                 >
-                  <MovieCard movie={movie} />
+                  <MovieCard movie={{
+                    id: movie.movie_id,
+                    title: movie.movie_title,
+                    poster: movie.movie_poster || "/placeholder.svg",
+                    rating: 0,
+                    year: "",
+                    genre: "",
+                    synopsis: "",
+                    language: ""
+                  }} />
                 </motion.div>
               ))}
             </AnimatePresence>
