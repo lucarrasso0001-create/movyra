@@ -14,7 +14,7 @@ import {
 } from "@/types/tmdb";
 
 // Generic fetch function that calls our edge function
-async function fetchTMDB<T>(endpoint: string, params: Record<string, string> = {}): Promise<T> {
+export async function fetchTMDB<T>(endpoint: string, params: Record<string, string> = {}): Promise<T> {
   try {
     console.log(`[TMDB] Chamando endpoint: ${endpoint}`, params);
     const { data, error } = await supabase.functions.invoke("tmdb", {
@@ -138,6 +138,33 @@ const getCertificationParams = (maxAge: number, type: "movie" | "tv"): Record<st
     "certification.lte": String(maxAge),
   };
 };
+
+// ==================== FETCH FUNCTIONS ====================
+
+export async function fetchMovies(type: "popular" | "top_rated" | "upcoming" | "now_playing" | "discover", page = 1, genreId?: string) {
+  const endpoint = type === "discover" ? "/discover/movie" : `/movie/${type}`;
+  const params: Record<string, string> = { page: String(page) };
+  if (genreId) params.with_genres = genreId;
+  
+  const data = await fetchTMDB<TMDBResponse<TMDBMovie>>(endpoint, params);
+  return data.results.map(transformMovie);
+}
+
+export async function fetchTVShows(type: "popular" | "top_rated" | "on_the_air" | "airing_today" | "discover", page = 1, genreId?: string) {
+  const endpoint = type === "discover" ? "/discover/tv" : `/tv/${type}`;
+  const params: Record<string, string> = { page: String(page) };
+  if (genreId) params.with_genres = genreId;
+  
+  const data = await fetchTMDB<TMDBResponse<TMDBTVShow>>(endpoint, params);
+  return data.results.map(transformTVShow);
+}
+
+export async function fetchTrending(timeWindow: "day" | "week" = "week") {
+  const data = await fetchTMDB<TMDBResponse<TMDBMovie>>(`/trending/all/${timeWindow}`);
+  return data.results.map((item: any) => 
+    item.media_type === "tv" ? transformTVShow(item as TMDBTVShow) : transformMovie(item as TMDBMovie)
+  );
+}
 
 // ==================== MOVIE HOOKS ====================
 
