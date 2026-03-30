@@ -28,6 +28,22 @@ const Account = () => {
   const [newValue, setNewValue] = useState("");
   const [currentPassword, setCurrentPassword] = useState("");
   const [isActionLoading, setIsActionLoading] = useState(false);
+  const [showAvatarPicker, setShowAvatarPicker] = useState(false);
+
+  const AVATAR_OPTIONS = [
+    "https://api.dicebear.com/9.x/avataaars/svg?seed=Felix",
+    "https://api.dicebear.com/9.x/avataaars/svg?seed=Aneka",
+    "https://api.dicebear.com/9.x/avataaars/svg?seed=Mia",
+    "https://api.dicebear.com/9.x/avataaars/svg?seed=Alex",
+    "https://api.dicebear.com/9.x/avataaars/svg?seed=Zoe",
+    "https://api.dicebear.com/9.x/avataaars/svg?seed=Max",
+    "https://api.dicebear.com/9.x/avataaars/svg?seed=Luna",
+    "https://api.dicebear.com/9.x/avataaars/svg?seed=Kai",
+    "https://api.dicebear.com/9.x/avataaars/svg?seed=Pablo",
+    "https://api.dicebear.com/9.x/avataaars/svg?seed=Nala",
+    "https://api.dicebear.com/9.x/avataaars/svg?seed=Bear",
+    "https://api.dicebear.com/9.x/avataaars/svg?seed=Star",
+  ];
 
   useEffect(() => {
     if (!user && !isLoading) {
@@ -48,18 +64,23 @@ const Account = () => {
     }
   };
 
-  const handleUpdateProfile = async () => {
-    if (!displayName.trim() || !user) {
+  const handleUpdateProfile = async (newAvatarUrl?: string) => {
+    if (!user) return;
+    if (!newAvatarUrl && !displayName.trim()) {
       toast({ title: "Nome inválido", description: "O nome não pode estar vazio.", variant: "destructive" });
       return;
     }
 
     setIsSaving(true);
     try {
+      const updateData: any = {};
+      if (newAvatarUrl) updateData.avatar_url = newAvatarUrl;
+      if (displayName.trim()) updateData.display_name = displayName;
+
       const { data, error } = await supabase
         .from("profiles")
-        .update({ display_name: displayName })
-        .eq("user_id", user.id)
+        .update(updateData)
+        .eq("id", profile?.id || "")
         .select()
         .single();
 
@@ -67,6 +88,7 @@ const Account = () => {
       
       setProfile(data);
       setIsEditing(false);
+      setShowAvatarPicker(false);
       toast({ title: "Perfil atualizado!", description: "Suas alterações foram salvas com sucesso." });
     } catch (error) {
       toast({ title: "Erro ao salvar", description: "Não foi possível atualizar o perfil.", variant: "destructive" });
@@ -132,6 +154,49 @@ const Account = () => {
 
   const renderModal = () => (
     <AnimatePresence>
+      {showAvatarPicker && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowAvatarPicker(false)}
+            className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+          />
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            className="relative w-full max-w-md bg-zinc-900 border border-white/10 rounded-[2.5rem] p-10 shadow-2xl"
+          >
+            <button 
+              onClick={() => setShowAvatarPicker(false)}
+              className="absolute top-6 right-6 p-2 rounded-full hover:bg-white/5 text-muted-foreground hover:text-white transition-all"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <h3 className="text-2xl font-black text-white uppercase tracking-tighter italic mb-6">
+              Escolher Avatar
+            </h3>
+            
+            <div className="grid grid-cols-4 gap-4">
+              {AVATAR_OPTIONS.map((url, i) => (
+                <motion.button
+                  key={i}
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => handleUpdateProfile(url)}
+                  className={`rounded-2xl overflow-hidden border-2 transition-all ${profile?.avatar_url === url ? "border-primary" : "border-transparent"}`}
+                >
+                  <img src={url} alt={`Avatar ${i}`} className="w-full h-full object-cover" />
+                </motion.button>
+              ))}
+            </div>
+          </motion.div>
+        </div>
+      )}
+
       {editingField && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
           <motion.div 
@@ -233,7 +298,10 @@ const Account = () => {
                       className="w-full h-full object-cover rounded-full"
                     />
                   </div>
-                  <button className="absolute bottom-0 right-0 bg-primary text-white p-2.5 rounded-full shadow-xl hover:scale-110 transition-all border-4 border-background">
+                  <button 
+                    onClick={() => setShowAvatarPicker(true)}
+                    className="absolute bottom-0 right-0 bg-primary text-white p-2.5 rounded-full shadow-xl hover:scale-110 transition-all border-4 border-background"
+                  >
                     <Camera className="w-4 h-4" />
                   </button>
                 </div>
@@ -248,7 +316,7 @@ const Account = () => {
                     />
                     <div className="flex gap-2">
                       <Button 
-                        onClick={handleUpdateProfile}
+                        onClick={() => handleUpdateProfile()}
                         disabled={isSaving}
                         className="flex-1 bg-primary text-white rounded-xl h-10 font-black uppercase tracking-tighter italic"
                       >
