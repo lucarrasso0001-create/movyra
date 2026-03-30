@@ -323,7 +323,9 @@ const ProfileSelect = () => {
       >
         <h1 className={`font-bold text-center ${isKids ? "text-4xl md:text-5xl" : "text-3xl md:text-4xl lg:text-5xl"}`}
           style={{ color: "hsl(var(--foreground))" }}>
-          {isManaging ? (editingProfileId ? "Gerenciar Perfil" : "Adicionar Perfil") : "Quem está assistindo?"}
+          {isManaging 
+            ? (editingProfileId ? "Editar Perfil" : "Selecione um perfil para editar") 
+            : "Quem está assistindo?"}
         </h1>
 
         <div className="flex flex-wrap gap-8 justify-center">
@@ -656,7 +658,10 @@ const ProfileSelect = () => {
               exit={{ opacity: 0, y: -10 }}
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
-              onClick={() => setIsManaging(true)}
+              onClick={() => {
+                setIsManaging(true);
+                setEditingProfileId(null); // Garante que comece sem nenhum perfil selecionado para edição
+              }}
               className="py-3 px-10 rounded-lg text-sm font-medium tracking-wide border transition-all"
               style={{
                 borderColor: "hsl(var(--border) / 0.6)",
