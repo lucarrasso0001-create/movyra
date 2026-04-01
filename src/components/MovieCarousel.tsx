@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Link } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import MovieCard from "./MovieCard";
 import type { Movie } from "@/types/tmdb";
 import { Skeleton } from "./ui/skeleton";
@@ -10,69 +11,139 @@ interface MovieCarouselProps {
   movies: Movie[];
   isLoading?: boolean;
   categorySlug?: string;
-  autoplay?: boolean;
 }
 
 const MovieCardSkeleton = () => (
-  <div className="min-w-[160px] md:min-w-[200px]">
-    <Skeleton className="aspect-[2/3] rounded-lg" />
+  <div className="flex-none w-[140px] sm:w-[180px] md:w-[220px] lg:w-[260px]">
+    <Skeleton className="aspect-[2/3] rounded-xl" />
   </div>
 );
 
-const MovieCarousel = ({ title, movies, isLoading = false, categorySlug, autoplay = false }: MovieCarouselProps) => {
+const MovieCarousel = ({ title, movies, isLoading = false, categorySlug }: MovieCarouselProps) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(true);
+  const [isScrolling, setIsScrolling] = useState(false);
 
-  const handleScroll = () => {
+  const updateArrows = () => {
     if (!scrollRef.current) return;
     const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
-    setShowLeftArrow(scrollLeft > 20);
-    setShowRightArrow(scrollLeft < scrollWidth - clientWidth - 20);
+    setShowLeftArrow(scrollLeft > 10);
+    setShowRightArrow(scrollLeft < scrollWidth - clientWidth - 10);
   };
 
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (el) {
+      el.addEventListener("scroll", updateArrows);
+      // Initial check
+      updateArrows();
+      // Check after images/content might have loaded
+      const timer = setTimeout(updateArrows, 500);
+      return () => {
+        el.removeEventListener("scroll", updateArrows);
+        clearTimeout(timer);
+      };
+    }
+  }, [movies, isLoading]);
+
   const scroll = (direction: "left" | "right") => {
-    if (!scrollRef.current) return;
-    scrollRef.current.scrollBy({ left: direction === "left" ? -500 : 500, behavior: "smooth" });
+    if (!scrollRef.current || isScrolling) return;
+    
+    setIsScrolling(true);
+    const { clientWidth } = scrollRef.current;
+    // Scroll exactly one full view width minus a small offset for context
+    const scrollAmount = direction === "left" ? -clientWidth * 0.8 : clientWidth * 0.8;
+    
+    scrollRef.current.scrollBy({ 
+      left: scrollAmount, 
+      behavior: "smooth" 
+    });
+
+    setTimeout(() => setIsScrolling(false), 500);
   };
 
   return (
-    <section className="relative group mb-12 overflow-visible">
-      <div className="flex items-center justify-between px-6 md:px-12 mb-4">
-        <h3 className="text-xl md:text-2xl font-black uppercase tracking-tighter text-foreground/90 group-hover:text-foreground transition-colors">
-          {title}
-        </h3>
+    <section className="relative mb-12 group/section">
+      <div className="flex items-end justify-between px-4 md:px-12 mb-6">
+        <div className="space-y-1">
+          <h3 className="text-xl md:text-3xl font-black uppercase tracking-tighter text-white/90 group-hover/section:text-white transition-colors duration-500">
+            {title}
+          </h3>
+          <div className="h-1 w-12 bg-primary rounded-full scale-x-0 group-hover/section:scale-x-100 transition-transform duration-500 origin-left" />
+        </div>
+        
         {categorySlug && (
-          <Link to={`/categoria/${categorySlug}`} className="text-[10px] md:text-xs font-black text-primary hover:text-foreground uppercase tracking-[0.2em] opacity-0 group-hover:opacity-100 transition-all duration-300">
-            Explorar Tudo
+          <Link 
+            to={`/categoria/${categorySlug}`} 
+            className="group/link flex items-center gap-2 text-[10px] md:text-xs font-black text-muted-foreground hover:text-primary uppercase tracking-[0.2em] transition-all duration-300"
+          >
+            Ver Tudo
+            <ChevronRight className="w-4 h-4 group-hover/link:translate-x-1 transition-transform" />
           </Link>
         )}
       </div>
 
-      <div className="relative group/row">
-        <button
-          onClick={() => scroll("left")}
-          className={`absolute left-0 top-0 bottom-0 z-30 w-12 md:w-16 flex items-center justify-center bg-black/80 opacity-0 group-hover/row:opacity-100 transition-all duration-300 ${!showLeftArrow && 'hidden'}`}
-        >
-          <ChevronLeft className="text-white w-8 h-8 hover:scale-125 transition-transform" />
-        </button>
+      <div className="relative group/carousel px-0 md:px-4">
+        {/* Gradientes de Sombra para as bordas */}
+        <div className="absolute left-0 top-0 bottom-0 w-20 bg-gradient-to-r from-background to-transparent z-20 pointer-events-none opacity-0 md:group-hover/carousel:opacity-100 transition-opacity duration-500" />
+        <div className="absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-l from-background to-transparent z-20 pointer-events-none opacity-0 md:group-hover/carousel:opacity-100 transition-opacity duration-500" />
 
-        <div ref={scrollRef} onScroll={handleScroll} className="flex gap-4 overflow-x-auto scrollbar-hide px-6 md:px-12 py-6">
-          {isLoading
-            ? Array.from({ length: 8 }).map((_, i) => <MovieCardSkeleton key={i} />)
-            : movies.map((movie) => (
-                <div key={movie.id + title} className="min-w-[160px] md:min-w-[200px]">
+        {/* Botão Esquerdo */}
+        <AnimatePresence>
+          {showLeftArrow && (
+            <motion.button
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -10 }}
+              onClick={() => scroll("left")}
+              className="absolute left-4 md:left-12 top-1/2 -translate-y-1/2 z-40 w-12 h-12 md:w-14 md:h-14 flex items-center justify-center bg-black/60 hover:bg-primary backdrop-blur-md rounded-full border border-white/10 text-white shadow-2xl transition-all duration-300 hover:scale-110 active:scale-95 group/btn"
+            >
+              <ChevronLeft className="w-6 h-6 md:w-8 md:h-8 group-hover/btn:-translate-x-0.5 transition-transform" />
+            </motion.button>
+          )}
+        </AnimatePresence>
+
+        {/* Container de Scroll */}
+        <div 
+          ref={scrollRef}
+          className="flex gap-3 md:gap-5 overflow-x-auto scrollbar-hide snap-x snap-mandatory px-4 md:px-12 py-4 scroll-smooth"
+          style={{ WebkitOverflowScrolling: 'touch' }}
+        >
+          {isLoading ? (
+            Array.from({ length: 6 }).map((_, i) => <MovieCardSkeleton key={i} />)
+          ) : (
+            movies.map((movie, index) => (
+              <motion.div 
+                key={`${movie.id}-${title}-${index}`}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.05 }}
+                className="flex-none w-[140px] sm:w-[180px] md:w-[220px] lg:w-[260px] snap-start"
+              >
+                <div className="transform transition-all duration-500 hover:scale-[1.05] hover:z-50">
                   <MovieCard movie={movie} />
                 </div>
-              ))}
+              </motion.div>
+            ))
+          )}
         </div>
 
-        <button
-          onClick={() => scroll("right")}
-          className={`absolute right-0 top-0 bottom-0 z-30 w-12 md:w-16 flex items-center justify-center bg-black/80 opacity-0 group-hover/row:opacity-100 transition-all duration-300 ${!showRightArrow && 'hidden'}`}
-        >
-          <ChevronRight className="text-white w-8 h-8 hover:scale-125 transition-transform" />
-        </button>
+        {/* Botão Direito */}
+        <AnimatePresence>
+          {showRightArrow && (
+            <motion.button
+              initial={{ opacity: 0, x: 10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 10 }}
+              onClick={() => scroll("right")}
+              className="absolute right-4 md:right-12 top-1/2 -translate-y-1/2 z-40 w-12 h-12 md:w-14 md:h-14 flex items-center justify-center bg-black/60 hover:bg-primary backdrop-blur-md rounded-full border border-white/10 text-white shadow-2xl transition-all duration-300 hover:scale-110 active:scale-95 group/btn"
+            >
+              <ChevronRight className="w-6 h-6 md:w-8 md:h-8 group-hover/btn:translate-x-0.5 transition-transform" />
+            </motion.button>
+          )}
+        </AnimatePresence>
       </div>
     </section>
   );
