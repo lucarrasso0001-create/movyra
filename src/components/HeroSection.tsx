@@ -40,7 +40,7 @@ const HeroSection = ({ movie }: HeroSectionProps) => {
             <div className="flex items-center gap-4 text-sm md:text-base font-bold">
               <span className="text-green-500">{movie.rating.toFixed(1)} ★</span>
               <span className="text-white/80">{movie.year}</span>
-              <span className="px-2 py-0.5 border border-white/40 rounded text-[10px] text-white/80 uppercase tracking-widest">HD</span>
+              <span className="px-2.5 py-0.5 border border-white/40 rounded-full text-[10px] text-white/80 uppercase tracking-widest">HD</span>
             </div>
 
             <p className="text-white/80 text-lg md:text-xl max-w-xl leading-relaxed line-clamp-3 drop-shadow-md font-medium">

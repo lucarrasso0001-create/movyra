@@ -14,7 +14,7 @@ interface MovieCarouselProps {
 
 const MovieCardSkeleton = () => (
   <div className="flex-none w-[140px] sm:w-[180px] md:w-[220px] lg:w-[260px] px-1.5 md:px-2">
-    <Skeleton className="aspect-[2/3] rounded-xl" />
+    <Skeleton className="aspect-[2/3] rounded-2xl" />
   </div>
 );
 

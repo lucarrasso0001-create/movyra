@@ -61,7 +61,7 @@ const Navbar = ({ onSearchChange }: NavbarProps) => {
                 onClick={() => setIsAccountMenuOpen(!isAccountMenuOpen)}
                 className="flex items-center gap-2 group"
               >
-                <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center overflow-hidden border border-white/10 group-hover:border-primary/50 transition-all">
+                <div className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden border-2 border-white/10 group-hover:border-primary/50 transition-all">
                   {profile?.avatar_url ? (
                     <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
                   ) : (
