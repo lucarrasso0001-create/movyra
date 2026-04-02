@@ -32,6 +32,7 @@ const App = () => (
             <BrowserRouter>
               <Routes>
                 <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+                <Route path="/index" element={<ProtectedRoute><Index /></ProtectedRoute>} />
                 <Route path="/profile-select" element={<ProtectedRoute><ProfileSelect /></ProtectedRoute>} />
                 <Route path="/perfis" element={<ProtectedRoute><ProfileSelect /></ProtectedRoute>} />
                 <Route path="/auth" element={<Auth />} />
