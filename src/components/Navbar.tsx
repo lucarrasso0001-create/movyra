@@ -16,8 +16,8 @@ const Navbar = ({ onSearchChange }: NavbarProps) => {
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-white/5">
-      <div className="flex items-center justify-between px-4 md:px-8 h-16">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-white/5 md:rounded-none">
+      <div className="flex items-center justify-between px-4 md:px-8 h-14 md:h-16">
         <div className="flex items-center gap-8">
           <Link to="/" className="text-primary font-black text-2xl tracking-tighter">
             MOVYRA
