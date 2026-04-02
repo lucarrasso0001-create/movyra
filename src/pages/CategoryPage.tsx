@@ -11,13 +11,34 @@ import { useState } from "react";
 
 // Mapeamento de slugs para nomes amigáveis e parâmetros de busca
 const CATEGORY_MAP: Record<string, { title: string; type: "movie" | "tv"; endpoint: any; genreId?: number }> = {
+  // Filmes - páginas de catálogo
   "now-playing": { title: "Em Exibição", type: "movie", endpoint: "now_playing" },
+  "nos-cinemas": { title: "Nos Cinemas", type: "movie", endpoint: "now_playing" },
   "popular": { title: "Filmes Populares", type: "movie", endpoint: "popular" },
+  "populares": { title: "Mais Populares", type: "movie", endpoint: "popular" },
+  "popular-movies": { title: "Filmes Populares", type: "movie", endpoint: "popular" },
   "upcoming": { title: "Em Breve", type: "movie", endpoint: "upcoming" },
+  "em-breve": { title: "Em Breve", type: "movie", endpoint: "upcoming" },
   "top-rated-movies": { title: "Melhores Filmes", type: "movie", endpoint: "top_rated" },
+  "top-rated": { title: "Mais Bem Avaliados", type: "movie", endpoint: "top_rated" },
+  "mais-avaliados": { title: "Mais Bem Avaliados", type: "movie", endpoint: "top_rated" },
+  "em-alta": { title: "Em Alta", type: "movie", endpoint: "popular" },
+  // Filmes - gêneros
   "action": { title: "Ação", type: "movie", endpoint: "discover", genreId: 28 },
+  "acao": { title: "Ação & Aventura", type: "movie", endpoint: "discover", genreId: 28 },
   "comedy": { title: "Comédia", type: "movie", endpoint: "discover", genreId: 35 },
   "horror": { title: "Terror", type: "movie", endpoint: "discover", genreId: 27 },
+  "terror": { title: "Terror & Suspense", type: "movie", endpoint: "discover", genreId: 27 },
+  "suspense": { title: "Suspense & Mistério", type: "movie", endpoint: "discover", genreId: 53 },
+  "crime": { title: "Investigação Policial", type: "movie", endpoint: "discover", genreId: 80 },
+  "animacao": { title: "Animação", type: "movie", endpoint: "discover", genreId: 16 },
+  "ficcao-cientifica": { title: "Ficção Científica", type: "movie", endpoint: "discover", genreId: 878 },
+  "documentario": { title: "Documentários", type: "movie", endpoint: "discover", genreId: 99 },
+  "historia": { title: "Épicos & Históricos", type: "movie", endpoint: "discover", genreId: 36 },
+  "guerra": { title: "Guerra", type: "movie", endpoint: "discover", genreId: 10752 },
+  "musical": { title: "Musical", type: "movie", endpoint: "discover", genreId: 10402 },
+  "faroeste": { title: "Faroeste", type: "movie", endpoint: "discover", genreId: 37 },
+  // Séries
   "popular-tv": { title: "Séries Populares", type: "tv", endpoint: "popular" },
   "airing-today": { title: "Passando Hoje", type: "tv", endpoint: "airing_today" },
   "on-the-air": { title: "No Ar", type: "tv", endpoint: "on_the_air" },
