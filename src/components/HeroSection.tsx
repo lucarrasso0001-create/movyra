@@ -33,7 +33,7 @@ const HeroSection = ({ movie }: HeroSectionProps) => {
           transition={{ delay: 0.3 }}
         >
           <div className="space-y-6">
-            <h1 className="text-4xl md:text-6xl lg:text-7xl font-black tracking-tighter leading-[0.9] text-white drop-shadow-2xl uppercase">
+            <h1 className="text-3xl md:text-6xl lg:text-7xl font-black tracking-tighter leading-[0.9] text-white drop-shadow-2xl uppercase">
               {movie.title}
             </h1>
 
