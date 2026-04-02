@@ -47,7 +47,7 @@ const Series = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
       
-      <main className="pt-24 pb-12">
+      <main className="pt-20 pb-24 md:pb-12">
         {/* Header da Página */}
         <div className="px-6 md:px-12 mb-12">
           <motion.div 

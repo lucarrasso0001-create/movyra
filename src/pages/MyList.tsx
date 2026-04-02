@@ -13,7 +13,7 @@ const MyList = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
       
-      <main className="pt-24 pb-12 px-4 md:px-8 lg:px-12">
+      <main className="pt-20 pb-24 md:pb-12 px-4 md:px-8 lg:px-12">
         {/* Header */}
         <div className="flex items-center gap-3 mb-10">
           <div className="p-2 bg-pink-500/10 rounded-lg">
