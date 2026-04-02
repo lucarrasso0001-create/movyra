@@ -47,26 +47,26 @@ const HeroSection = ({ movie }: HeroSectionProps) => {
               {movie.synopsis}
             </p>
 
-            <div className="flex flex-wrap gap-4 pt-4">
+            <div className="flex flex-wrap gap-3 pt-4">
               <button 
                 onClick={() => navigate(linkPath)}
-                className="bg-white text-black hover:bg-white/90 px-8 py-4 rounded-md font-black text-lg transition-all hover:scale-105 flex items-center gap-2 shadow-xl"
+                className="bg-white text-black hover:bg-white/90 px-6 py-3 md:px-8 md:py-4 rounded-full font-black text-base md:text-lg transition-all hover:scale-105 active:scale-95 flex items-center gap-2 shadow-xl"
               >
-                <Play className="fill-current" size={24} />
+                <Play className="fill-current" size={20} />
                 ASSISTIR
               </button>
 
               <button 
                 onClick={() => toggleFavorite(movie)}
-                className="bg-white/10 backdrop-blur-md text-white hover:bg-white/20 px-8 py-4 rounded-md font-black text-lg transition-all hover:scale-105 flex items-center gap-2 border border-white/10 shadow-xl"
+                className="bg-white/10 backdrop-blur-md text-white hover:bg-white/20 px-6 py-3 md:px-8 md:py-4 rounded-full font-black text-base md:text-lg transition-all hover:scale-105 active:scale-95 flex items-center gap-2 border border-white/10 shadow-xl"
               >
-                {favorited ? <Check size={24} className="text-green-500" /> : <Plus size={24} />}
+                {favorited ? <Check size={20} className="text-green-500" /> : <Plus size={20} />}
                 MINHA LISTA
               </button>
               
               <button 
                 onClick={() => navigate(linkPath)}
-                className="bg-transparent border border-white/20 text-white hover:bg-white/10 px-6 py-4 rounded-md font-black text-lg hidden md:flex items-center gap-2"
+                className="bg-transparent border border-white/20 text-white hover:bg-white/10 px-6 py-3 md:py-4 rounded-full font-black text-base md:text-lg hidden md:flex items-center gap-2"
               >
                 <Info size={24} />
                 SAIBA MAIS
