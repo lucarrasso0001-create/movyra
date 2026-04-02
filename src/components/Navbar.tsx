@@ -40,7 +40,7 @@ const Navbar = ({ onSearchChange }: NavbarProps) => {
                     type="text"
                     placeholder="Buscar..."
                     onChange={(e) => onSearchChange(e.target.value)}
-                    className="bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-sm text-white placeholder:text-white/40 focus:outline-none focus:border-primary w-48 md:w-64"
+                    className="bg-white/10 border border-white/20 rounded-full px-4 py-2 text-sm text-white placeholder:text-white/40 focus:outline-none focus:border-primary w-48 md:w-64"
                     autoFocus
                   />
                   <button onClick={() => { setIsSearchOpen(false); onSearchChange(""); }}>
