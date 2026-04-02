@@ -79,7 +79,7 @@ const CategoryPage = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
       
-      <main className="pt-24 pb-12 px-6 md:px-12">
+      <main className="pt-20 pb-24 md:pb-12 px-4 md:px-12">
         {/* Header da Categoria */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
           <motion.div 

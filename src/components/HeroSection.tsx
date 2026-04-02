@@ -33,40 +33,40 @@ const HeroSection = ({ movie }: HeroSectionProps) => {
           transition={{ delay: 0.3 }}
         >
           <div className="space-y-6">
-            <h1 className="text-4xl md:text-6xl lg:text-7xl font-black tracking-tighter leading-[0.9] text-white drop-shadow-2xl uppercase">
+            <h1 className="text-3xl md:text-6xl lg:text-7xl font-black tracking-tighter leading-[0.9] text-white drop-shadow-2xl uppercase">
               {movie.title}
             </h1>
 
             <div className="flex items-center gap-4 text-sm md:text-base font-bold">
               <span className="text-green-500">{movie.rating.toFixed(1)} ★</span>
               <span className="text-white/80">{movie.year}</span>
-              <span className="px-2 py-0.5 border border-white/40 rounded text-[10px] text-white/80 uppercase tracking-widest">HD</span>
+              <span className="px-2.5 py-0.5 border border-white/40 rounded-full text-[10px] text-white/80 uppercase tracking-widest">HD</span>
             </div>
 
             <p className="text-white/80 text-lg md:text-xl max-w-xl leading-relaxed line-clamp-3 drop-shadow-md font-medium">
               {movie.synopsis}
             </p>
 
-            <div className="flex flex-wrap gap-4 pt-4">
+            <div className="flex flex-wrap gap-3 pt-4">
               <button 
                 onClick={() => navigate(linkPath)}
-                className="bg-white text-black hover:bg-white/90 px-8 py-4 rounded-md font-black text-lg transition-all hover:scale-105 flex items-center gap-2 shadow-xl"
+                className="bg-white text-black hover:bg-white/90 px-6 py-3 md:px-8 md:py-4 rounded-full font-black text-base md:text-lg transition-all hover:scale-105 active:scale-95 flex items-center gap-2 shadow-xl"
               >
-                <Play className="fill-current" size={24} />
+                <Play className="fill-current" size={20} />
                 ASSISTIR
               </button>
 
               <button 
                 onClick={() => toggleFavorite(movie)}
-                className="bg-white/10 backdrop-blur-md text-white hover:bg-white/20 px-8 py-4 rounded-md font-black text-lg transition-all hover:scale-105 flex items-center gap-2 border border-white/10 shadow-xl"
+                className="bg-white/10 backdrop-blur-md text-white hover:bg-white/20 px-6 py-3 md:px-8 md:py-4 rounded-full font-black text-base md:text-lg transition-all hover:scale-105 active:scale-95 flex items-center gap-2 border border-white/10 shadow-xl"
               >
-                {favorited ? <Check size={24} className="text-green-500" /> : <Plus size={24} />}
+                {favorited ? <Check size={20} className="text-green-500" /> : <Plus size={20} />}
                 MINHA LISTA
               </button>
               
               <button 
                 onClick={() => navigate(linkPath)}
-                className="bg-transparent border border-white/20 text-white hover:bg-white/10 px-6 py-4 rounded-md font-black text-lg hidden md:flex items-center gap-2"
+                className="bg-transparent border border-white/20 text-white hover:bg-white/10 px-6 py-3 md:py-4 rounded-full font-black text-base md:text-lg hidden md:flex items-center gap-2"
               >
                 <Info size={24} />
                 SAIBA MAIS

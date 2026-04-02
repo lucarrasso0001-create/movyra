@@ -62,7 +62,7 @@ const MovieCard = ({ movie }: MovieCardProps) => {
       <Link to={linkPath} className="block">
         <motion.div 
           layout
-          className="relative aspect-[2/3] rounded-lg overflow-hidden bg-muted shadow-lg transition-all duration-300"
+          className="relative aspect-[2/3] rounded-2xl md:rounded-lg overflow-hidden bg-muted shadow-lg transition-all duration-300"
           animate={isHovered ? { 
             scale: 1.5, y: -50,
             boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.8)"
