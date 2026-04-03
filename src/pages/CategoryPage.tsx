@@ -55,25 +55,18 @@ const CategoryPage = () => {
   const category = slug ? CATEGORY_MAP[slug] : null;
   const title = category?.title || "Categoria";
 
-  const { data, isLoading, error } = useQuery({
+  const { data: movies = [], isLoading, error } = useQuery({
     queryKey: ["category", slug],
     queryFn: async () => {
-      if (!category) return { results: [] as Movie[] };
-      const params: any = {};
-      if (category.genreId) {
-        params.with_genres = category.genreId.toString();
-      }
+      if (!category) return [] as Movie[];
+      const genreId = category.genreId?.toString();
       
-      const result = category.type === "movie" 
-        ? await fetchMovies(category.endpoint, params)
-        : await fetchTVShows(category.endpoint, params);
-      
-      return result;
+      return category.type === "movie" 
+        ? await fetchMovies(category.endpoint, 1, genreId)
+        : await fetchTVShows(category.endpoint, 1, genreId);
     },
     enabled: !!slug && !!category,
   });
-
-  const movies = (data as any)?.results || [];
 
   return (
     <div className="min-h-screen bg-background">
