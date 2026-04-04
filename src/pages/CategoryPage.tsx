@@ -94,7 +94,7 @@ const CategoryPage = () => {
   // Deduplicate movies across pages
   const movies = useMemo(() => {
     if (!data) return [];
-    const seen = new Set<number>();
+    const seen = new Set<string | number>();
     const result: Movie[] = [];
     for (const page of data.pages) {
       for (const movie of page.movies) {
