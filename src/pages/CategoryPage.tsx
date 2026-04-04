@@ -1,17 +1,15 @@
 import { useParams, Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { fetchMovies, fetchTVShows } from "@/hooks/useTMDB";
-import { Movie } from "@/types/tmdb";
+import { useInfiniteQuery } from "@tanstack/react-query";
+import { fetchTMDB } from "@/hooks/useTMDB";
+import { Movie, TMDBMovie, TMDBTVShow, TMDBResponse, transformMovie, transformTVShow } from "@/types/tmdb";
 import Navbar from "@/components/Navbar";
 import MovieCard from "@/components/MovieCard";
-import { ArrowLeft, Filter, LayoutGrid, List } from "lucide-react";
+import { ArrowLeft, Filter, LayoutGrid, List, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useState } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 
-// Mapeamento de slugs para nomes amigáveis e parâmetros de busca
-const CATEGORY_MAP: Record<string, { title: string; type: "movie" | "tv"; endpoint: any; genreId?: number }> = {
-  // Filmes - páginas de catálogo
+const CATEGORY_MAP: Record<string, { title: string; type: "movie" | "tv"; endpoint: string; genreId?: number }> = {
   "now-playing": { title: "Em Exibição", type: "movie", endpoint: "now_playing" },
   "nos-cinemas": { title: "Nos Cinemas", type: "movie", endpoint: "now_playing" },
   "popular": { title: "Filmes Populares", type: "movie", endpoint: "popular" },
@@ -23,7 +21,6 @@ const CATEGORY_MAP: Record<string, { title: string; type: "movie" | "tv"; endpoi
   "top-rated": { title: "Mais Bem Avaliados", type: "movie", endpoint: "top_rated" },
   "mais-avaliados": { title: "Mais Bem Avaliados", type: "movie", endpoint: "top_rated" },
   "em-alta": { title: "Em Alta", type: "movie", endpoint: "popular" },
-  // Filmes - gêneros
   "action": { title: "Ação", type: "movie", endpoint: "discover", genreId: 28 },
   "acao": { title: "Ação & Aventura", type: "movie", endpoint: "discover", genreId: 28 },
   "comedy": { title: "Comédia", type: "movie", endpoint: "discover", genreId: 35 },
@@ -38,7 +35,6 @@ const CATEGORY_MAP: Record<string, { title: string; type: "movie" | "tv"; endpoi
   "guerra": { title: "Guerra", type: "movie", endpoint: "discover", genreId: 10752 },
   "musical": { title: "Musical", type: "movie", endpoint: "discover", genreId: 10402 },
   "faroeste": { title: "Faroeste", type: "movie", endpoint: "discover", genreId: 37 },
-  // Séries
   "popular-tv": { title: "Séries Populares", type: "tv", endpoint: "popular" },
   "airing-today": { title: "Passando Hoje", type: "tv", endpoint: "airing_today" },
   "on-the-air": { title: "No Ar", type: "tv", endpoint: "on_the_air" },
@@ -48,38 +44,96 @@ const CATEGORY_MAP: Record<string, { title: string; type: "movie" | "tv"; endpoi
   "comedy-tv": { title: "Comédia (TV)", type: "tv", endpoint: "discover", genreId: 35 },
 };
 
+async function fetchCategoryPage(category: typeof CATEGORY_MAP[string], page: number): Promise<{ movies: Movie[]; totalPages: number }> {
+  const isMovie = category.type === "movie";
+  const endpoint = category.endpoint === "discover"
+    ? (isMovie ? "/discover/movie" : "/discover/tv")
+    : (isMovie ? `/movie/${category.endpoint}` : `/tv/${category.endpoint}`);
+
+  const params: Record<string, string> = { page: String(page) };
+  if (category.genreId) params.with_genres = String(category.genreId);
+  if (category.endpoint === "discover") params.sort_by = "popularity.desc";
+
+  const data = isMovie
+    ? await fetchTMDB<TMDBResponse<TMDBMovie>>(endpoint, params)
+    : await fetchTMDB<TMDBResponse<TMDBTVShow>>(endpoint, params);
+
+  const movies = isMovie
+    ? (data as TMDBResponse<TMDBMovie>).results.map(transformMovie)
+    : (data as TMDBResponse<TMDBTVShow>).results.map(transformTVShow);
+
+  return { movies, totalPages: Math.min(data.total_pages || 1, 500) };
+}
+
 const CategoryPage = () => {
   const { slug } = useParams<{ slug: string }>();
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
   const category = slug ? CATEGORY_MAP[slug] : null;
   const title = category?.title || "Categoria";
 
-  const { data: movies = [], isLoading, error } = useQuery({
-    queryKey: ["category", slug],
-    queryFn: async () => {
-      if (!category) return [] as Movie[];
-      const genreId = category.genreId?.toString();
-      
-      return category.type === "movie" 
-        ? await fetchMovies(category.endpoint, 1, genreId)
-        : await fetchTVShows(category.endpoint, 1, genreId);
+  const {
+    data,
+    isLoading,
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
+    queryKey: ["category-infinite", slug],
+    queryFn: ({ pageParam = 1 }) => fetchCategoryPage(category!, pageParam),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage, _, lastPageParam) => {
+      if (lastPageParam < lastPage.totalPages) return lastPageParam + 1;
+      return undefined;
     },
     enabled: !!slug && !!category,
   });
 
+  // Deduplicate movies across pages
+  const movies = useMemo(() => {
+    if (!data) return [];
+    const seen = new Set<string | number>();
+    const result: Movie[] = [];
+    for (const page of data.pages) {
+      for (const movie of page.movies) {
+        if (!seen.has(movie.id)) {
+          seen.add(movie.id);
+          result.push(movie);
+        }
+      }
+    }
+    return result;
+  }, [data]);
+
+  // IntersectionObserver for infinite scroll
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+          fetchNextPage();
+        }
+      },
+      { rootMargin: "400px" }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      
+
       <main className="pt-20 pb-24 md:pb-12 px-4 md:px-12">
-        {/* Header da Categoria */}
+        {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
-          <motion.div 
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-          >
-            <Link 
+          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
+            <Link
               to={category?.type === "tv" ? "/series" : "/filmes"}
               className="inline-flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors mb-4 text-sm font-bold uppercase tracking-widest"
             >
@@ -92,13 +146,13 @@ const CategoryPage = () => {
 
           <div className="flex items-center gap-4">
             <div className="flex bg-white/5 p-1 rounded-xl border border-white/10">
-              <button 
+              <button
                 onClick={() => setViewMode("grid")}
                 className={`p-2 rounded-lg transition-all ${viewMode === "grid" ? "bg-primary text-primary-foreground shadow-lg" : "text-muted-foreground hover:text-white"}`}
               >
                 <LayoutGrid className="w-5 h-5" />
               </button>
-              <button 
+              <button
                 onClick={() => setViewMode("list")}
                 className={`p-2 rounded-lg transition-all ${viewMode === "list" ? "bg-primary text-primary-foreground shadow-lg" : "text-muted-foreground hover:text-white"}`}
               >
@@ -111,10 +165,10 @@ const CategoryPage = () => {
           </div>
         </div>
 
-        {/* Grid de Conteúdo */}
+        {/* Content */}
         {isLoading ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
-            {Array.from({ length: 12 }).map((_, i) => (
+            {Array.from({ length: 18 }).map((_, i) => (
               <div key={i} className="aspect-[2/3]">
                 <Skeleton className="w-full h-full rounded-2xl bg-white/5" />
               </div>
@@ -127,31 +181,34 @@ const CategoryPage = () => {
             </div>
             <h2 className="text-2xl font-bold text-white mb-2">Nenhum título encontrado</h2>
             <p className="text-muted-foreground max-w-md">
-              Não conseguimos encontrar filmes ou séries nesta categoria no momento. Tente novamente mais tarde.
+              Não conseguimos encontrar filmes ou séries nesta categoria no momento.
             </p>
           </div>
         ) : (
-          <div className={viewMode === "grid" 
-            ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6"
-            : "flex flex-col gap-4"
-          }>
-            {movies.map((movie: Movie, index: number) => (
+          <div
+            className={
+              viewMode === "grid"
+                ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6"
+                : "flex flex-col gap-4"
+            }
+          >
+            {movies.map((movie, index) => (
               <motion.div
                 key={movie.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: (index % 12) * 0.05 }}
+                transition={{ delay: (index % 20) * 0.03 }}
               >
                 {viewMode === "grid" ? (
                   <MovieCard movie={movie} />
                 ) : (
-                  <Link 
-                    to={`/movie/${movie.id}?type=${category?.type || 'movie'}`}
+                  <Link
+                    to={`/movie/${movie.id}?type=${category?.type || "movie"}`}
                     className="flex gap-6 bg-white/5 hover:bg-white/10 p-4 rounded-2xl border border-white/5 transition-all group"
                   >
-                    <img 
-                      src={movie.poster} 
-                      alt={movie.title} 
+                    <img
+                      src={movie.poster}
+                      alt={movie.title}
                       className="w-24 aspect-[2/3] object-cover rounded-lg shadow-lg group-hover:scale-105 transition-transform"
                     />
                     <div className="flex-1 py-2">
@@ -161,7 +218,9 @@ const CategoryPage = () => {
                       <div className="flex items-center gap-3 text-sm text-muted-foreground mb-3 font-bold">
                         <span className="text-accent">{movie.rating} ★</span>
                         <span>{movie.year}</span>
-                        <span className="uppercase tracking-widest text-[10px] bg-white/10 px-2 py-0.5 rounded">{movie.language}</span>
+                        <span className="uppercase tracking-widest text-[10px] bg-white/10 px-2 py-0.5 rounded">
+                          {movie.language}
+                        </span>
                       </div>
                       <p className="text-sm text-muted-foreground line-clamp-2 max-w-2xl">
                         {movie.synopsis}
@@ -174,14 +233,20 @@ const CategoryPage = () => {
           </div>
         )}
 
-        {/* Paginação (Simulada) */}
-        {!isLoading && movies.length > 0 && (
-          <div className="mt-16 flex justify-center">
-            <button className="bg-white text-black font-black uppercase tracking-tighter px-12 py-4 rounded-xl transition-all hover:scale-105 active:scale-95 shadow-xl">
-              Carregar Mais
-            </button>
-          </div>
-        )}
+        {/* Sentinel + Loading indicator */}
+        <div ref={sentinelRef} className="flex justify-center py-12">
+          {isFetchingNextPage && (
+            <div className="flex items-center gap-3 text-muted-foreground">
+              <Loader2 className="w-6 h-6 animate-spin" />
+              <span className="font-bold text-sm uppercase tracking-widest">Carregando mais...</span>
+            </div>
+          )}
+          {!hasNextPage && movies.length > 0 && !isLoading && (
+            <p className="text-muted-foreground text-sm font-bold uppercase tracking-widest">
+              Você chegou ao fim 🎬
+            </p>
+          )}
+        </div>
       </main>
     </div>
   );
