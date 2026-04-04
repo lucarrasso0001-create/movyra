@@ -59,7 +59,7 @@ const MovieCarousel = ({ title, movies, isLoading = false, categorySlug }: Movie
   return (
     <section className="relative mb-12 overflow-visible">
       {/* Cabeçalho do Carrossel */}
-      <div className="flex items-end justify-between px-6 md:px-14 mb-4">
+      <div className="flex items-end justify-between px-6 md:px-14 mb-4 relative z-50">
         <div className="space-y-1">
           <h3 className="text-xl md:text-3xl font-black uppercase tracking-tighter text-white/90 group-hover:text-white transition-colors duration-300">
             {title}
@@ -70,7 +70,7 @@ const MovieCarousel = ({ title, movies, isLoading = false, categorySlug }: Movie
         {categorySlug && (
           <Link 
             to={`/categoria/${categorySlug}`} 
-            className="group/link flex items-center gap-2 text-[10px] md:text-xs font-black text-muted-foreground hover:text-primary uppercase tracking-[0.2em] transition-all duration-300"
+            className="group/link relative z-50 flex items-center gap-2 text-[10px] md:text-xs font-black text-muted-foreground hover:text-primary uppercase tracking-[0.2em] transition-all duration-300"
           >
             Ver Tudo
             <ChevronRight className="w-4 h-4 group-hover/link:translate-x-1 transition-transform" />
