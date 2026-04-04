@@ -243,9 +243,9 @@ const PlayerFrame = ({
           ref={iframeRef}
           src={videoUrl}
           className="w-full h-full border-0"
-          sandbox="allow-scripts allow-same-origin allow-forms allow-presentation"
           allowFullScreen
           allow="autoplay; encrypted-media; fullscreen"
+          referrerPolicy="no-referrer"
         />
 
         {/* Camada anti-clique para bloquear popups */}
