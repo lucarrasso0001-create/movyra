@@ -1,9 +1,11 @@
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Navbar from "@/components/Navbar";
 import MovieCarousel from "@/components/MovieCarousel";
 import { fetchTVShows } from "@/hooks/useTMDB";
 import { Tv } from "lucide-react";
 import { motion } from "framer-motion";
+import type { Movie } from "@/types/tmdb";
 
 const Series = () => {
   // Buscar diferentes categorias de séries
@@ -42,6 +44,25 @@ const Series = () => {
     queryKey: ["series-sci-fi-fantasy"],
     queryFn: () => fetchTVShows("discover", 1, "10765"),
   });
+
+  // --- DEDUPLICAÇÃO DE GÊNEROS ---
+  // Séries não repetem entre categorias de GÊNERO (Ação, Comédia, Ficção Científica).
+  // Categorias curadas (Em Alta, Passando Hoje, Novos Episódios, Aclamadas) NÃO são filtradas.
+  const uniqueGenres = useMemo(() => {
+    const seenIds = new Set<string>();
+    const filterUnique = (movies: Movie[] | undefined) => {
+      if (!movies) return [];
+      const filtered = movies.filter(m => !seenIds.has(m.id));
+      filtered.forEach(m => seenIds.add(m.id));
+      return filtered;
+    };
+
+    return {
+      actionAdventure: filterUnique(actionAdventureSeries),
+      sciFiFantasy: filterUnique(sciFiFantasySeries),
+      comedy: filterUnique(comedySeries),
+    };
+  }, [actionAdventureSeries, sciFiFantasySeries, comedySeries]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -87,21 +108,21 @@ const Series = () => {
 
           <MovieCarousel 
             title="Ação e Aventura" 
-            movies={actionAdventureSeries || []} 
+            movies={uniqueGenres.actionAdventure} 
             isLoading={loadingAction}
             categorySlug="action-adventure-tv"
           />
 
           <MovieCarousel 
             title="Ficção Científica e Fantasia" 
-            movies={sciFiFantasySeries || []} 
+            movies={uniqueGenres.sciFiFantasy} 
             isLoading={loadingSciFi}
             categorySlug="sci-fi-fantasy-tv"
           />
 
           <MovieCarousel 
             title="Comédias Imperdíveis" 
-            movies={comedySeries || []} 
+            movies={uniqueGenres.comedy} 
             isLoading={loadingComedy}
             categorySlug="comedy-tv"
           />

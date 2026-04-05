@@ -1,9 +1,11 @@
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Navbar from "@/components/Navbar";
 import MovieCarousel from "@/components/MovieCarousel";
 import { fetchMovies } from "@/hooks/useTMDB";
 import { Film } from "lucide-react";
 import { motion } from "framer-motion";
+import type { Movie } from "@/types/tmdb";
 
 const Movies = () => {
   // Buscar diferentes categorias de filmes
@@ -42,6 +44,25 @@ const Movies = () => {
     queryKey: ["movies-horror"],
     queryFn: () => fetchMovies("discover", 1, "27"),
   });
+
+  // --- DEDUPLICAÇÃO DE GÊNEROS ---
+  // Filmes não repetem entre categorias de GÊNERO (Ação, Comédia, Terror).
+  // Categorias curadas (Em Cartaz, Populares, Lançamentos, Aclamados) NÃO são filtradas.
+  const uniqueGenres = useMemo(() => {
+    const seenIds = new Set<string>();
+    const filterUnique = (movies: Movie[] | undefined) => {
+      if (!movies) return [];
+      const filtered = movies.filter(m => !seenIds.has(m.id));
+      filtered.forEach(m => seenIds.add(m.id));
+      return filtered;
+    };
+
+    return {
+      action: filterUnique(actionMovies),
+      comedy: filterUnique(comedyMovies),
+      horror: filterUnique(horrorMovies),
+    };
+  }, [actionMovies, comedyMovies, horrorMovies]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -94,21 +115,21 @@ const Movies = () => {
 
           <MovieCarousel 
             title="O Melhor da Ação" 
-            movies={actionMovies || []} 
+            movies={uniqueGenres.action} 
             isLoading={loadingAction}
             categorySlug="action"
           />
 
           <MovieCarousel 
             title="Para Morrer de Rir" 
-            movies={comedyMovies || []} 
+            movies={uniqueGenres.comedy} 
             isLoading={loadingComedy}
             categorySlug="comedy"
           />
 
           <MovieCarousel 
             title="Terror e Suspense" 
-            movies={horrorMovies || []} 
+            movies={uniqueGenres.horror} 
             isLoading={loadingHorror}
             categorySlug="horror"
           />
