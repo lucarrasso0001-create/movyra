@@ -108,21 +108,21 @@ const Series = () => {
 
           <MovieCarousel 
             title="Ação e Aventura" 
-            movies={actionAdventureSeries || []} 
+            movies={uniqueGenres.actionAdventure} 
             isLoading={loadingAction}
             categorySlug="action-adventure-tv"
           />
 
           <MovieCarousel 
             title="Ficção Científica e Fantasia" 
-            movies={sciFiFantasySeries || []} 
+            movies={uniqueGenres.sciFiFantasy} 
             isLoading={loadingSciFi}
             categorySlug="sci-fi-fantasy-tv"
           />
 
           <MovieCarousel 
             title="Comédias Imperdíveis" 
-            movies={comedySeries || []} 
+            movies={uniqueGenres.comedy} 
             isLoading={loadingComedy}
             categorySlug="comedy-tv"
           />

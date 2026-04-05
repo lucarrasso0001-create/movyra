@@ -115,21 +115,21 @@ const Movies = () => {
 
           <MovieCarousel 
             title="O Melhor da Ação" 
-            movies={actionMovies || []} 
+            movies={uniqueGenres.action} 
             isLoading={loadingAction}
             categorySlug="action"
           />
 
           <MovieCarousel 
             title="Para Morrer de Rir" 
-            movies={comedyMovies || []} 
+            movies={uniqueGenres.comedy} 
             isLoading={loadingComedy}
             categorySlug="comedy"
           />
 
           <MovieCarousel 
             title="Terror e Suspense" 
-            movies={horrorMovies || []} 
+            movies={uniqueGenres.horror} 
             isLoading={loadingHorror}
             categorySlug="horror"
           />
