@@ -29,47 +29,47 @@ const Series = () => {
   // Gêneros (participam da deduplicação) - IDs de gênero TV do TMDB
   const { data: actionAdventureSeries, isLoading: loadingAction } = useQuery({
     queryKey: ["series-action-adventure"],
-    queryFn: () => fetchTVShows("discover", 1, "10759"),
+    queryFn: () => fetchTVShows("discover", 1, "10759", 2),
   });
   const { data: comedySeries, isLoading: loadingComedy } = useQuery({
     queryKey: ["series-comedy"],
-    queryFn: () => fetchTVShows("discover", 1, "35"),
+    queryFn: () => fetchTVShows("discover", 1, "35", 2),
   });
   const { data: sciFiFantasySeries, isLoading: loadingSciFi } = useQuery({
     queryKey: ["series-sci-fi-fantasy"],
-    queryFn: () => fetchTVShows("discover", 1, "10765"),
+    queryFn: () => fetchTVShows("discover", 1, "10765", 2),
   });
   const { data: dramaSeries, isLoading: loadingDrama } = useQuery({
     queryKey: ["series-drama"],
-    queryFn: () => fetchTVShows("discover", 1, "18"),
+    queryFn: () => fetchTVShows("discover", 1, "18", 2),
   });
   const { data: crimeSeries, isLoading: loadingCrime } = useQuery({
     queryKey: ["series-crime"],
-    queryFn: () => fetchTVShows("discover", 1, "80"),
+    queryFn: () => fetchTVShows("discover", 1, "80", 2),
   });
   const { data: mysterySeries, isLoading: loadingMystery } = useQuery({
     queryKey: ["series-mystery"],
-    queryFn: () => fetchTVShows("discover", 1, "9648"),
+    queryFn: () => fetchTVShows("discover", 1, "9648", 2),
   });
   const { data: animationSeries, isLoading: loadingAnimation } = useQuery({
     queryKey: ["series-animation"],
-    queryFn: () => fetchTVShows("discover", 1, "16"),
+    queryFn: () => fetchTVShows("discover", 1, "16", 2),
   });
   const { data: documentarySeries, isLoading: loadingDocumentary } = useQuery({
     queryKey: ["series-documentary"],
-    queryFn: () => fetchTVShows("discover", 1, "99"),
+    queryFn: () => fetchTVShows("discover", 1, "99", 2),
   });
   const { data: familySeries, isLoading: loadingFamily } = useQuery({
     queryKey: ["series-family"],
-    queryFn: () => fetchTVShows("discover", 1, "10751"),
+    queryFn: () => fetchTVShows("discover", 1, "10751", 2),
   });
   const { data: warPoliticsSeries, isLoading: loadingWarPolitics } = useQuery({
     queryKey: ["series-war-politics"],
-    queryFn: () => fetchTVShows("discover", 1, "10768"),
+    queryFn: () => fetchTVShows("discover", 1, "10768", 2),
   });
   const { data: realitySeries, isLoading: loadingReality } = useQuery({
     queryKey: ["series-reality"],
-    queryFn: () => fetchTVShows("discover", 1, "10764"),
+    queryFn: () => fetchTVShows("discover", 1, "10764", 2),
   });
 
   // --- DEDUPLICAÇÃO DE GÊNEROS ---

@@ -18,6 +18,8 @@ const MovieCardSkeleton = () => (
   </div>
 );
 
+const MIN_MOVIES = 4;
+
 const MovieCarousel = ({ title, movies, isLoading = false, categorySlug }: MovieCarouselProps) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
