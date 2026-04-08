@@ -103,9 +103,9 @@ const MovieCarousel = ({ title, movies, isLoading = false, categorySlug }: Movie
           }}
         >
           {isLoading ? (
-            Array.from({ length: 6 }).map((_, i) => <MovieCardSkeleton key={i} />)
+            Array.from({ length: 11 }).map((_, i) => <MovieCardSkeleton key={i} />)
           ) : (
-            movies.map((movie, index) => (
+            movies.slice(0, 11).map((movie, index) => (
               <div 
                 key={`${movie.id}-${title}-${index}`}
                 className="flex-none w-[150px] sm:w-[190px] md:w-[230px] lg:w-[270px] snap-start px-1.5 md:px-2.5"
