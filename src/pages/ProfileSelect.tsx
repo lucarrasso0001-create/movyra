@@ -106,7 +106,7 @@ const ProfileSelect = () => {
       return;
     }
 
-    if (p.pin_hash && !isKids) {
+    if (p.has_pin && !isKids) {
       setVerifyingProfile(p);
       setShowPinModal(true);
       return;
@@ -116,13 +116,24 @@ const ProfileSelect = () => {
     navigate("/");
   };
 
-  const handlePinSubmit = () => {
-    if (!verifyingProfile?.pin_hash) return;
-    if (verifyPin(pinInput, verifyingProfile.pin_hash)) {
-      setIsKids(verifyingProfile.is_kids);
-      navigate("/");
-    } else {
-      setPinError("PIN incorreto. Tente novamente.");
+  const handlePinSubmit = async () => {
+    if (!verifyingProfile) return;
+    try {
+      const { data, error } = await supabase.rpc("verify_profile_pin", {
+        p_profile_id: verifyingProfile.id,
+        p_pin: pinInput,
+      });
+      if (error) throw error;
+      if (data) {
+        setIsKids(verifyingProfile.is_kids);
+        navigate("/");
+      } else {
+        setPinError("PIN incorreto. Tente novamente.");
+        setPinInput("");
+      }
+    } catch (err) {
+      console.error("Error verifying PIN:", err);
+      setPinError("Erro ao verificar PIN.");
       setPinInput("");
     }
   };
