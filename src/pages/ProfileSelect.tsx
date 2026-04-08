@@ -35,12 +35,7 @@ const AGE_RATINGS = [
   { label: "18+", value: 18, color: "hsl(0 85% 40%)" },
 ];
 
-function hashPin(pin: string): string {
-  return btoa(pin + "movyra_salt_2026");
-}
-function verifyPin(pin: string, hash: string): boolean {
-  return hashPin(pin) === hash;
-}
+// PIN verification and hashing are done server-side via RPC functions
 
 type ManageTab = "profile" | "parental" | "theme";
 
@@ -111,7 +106,7 @@ const ProfileSelect = () => {
       return;
     }
 
-    if (p.pin_hash && !isKids) {
+    if (p.has_pin && !isKids) {
       setVerifyingProfile(p);
       setShowPinModal(true);
       return;
@@ -121,13 +116,24 @@ const ProfileSelect = () => {
     navigate("/");
   };
 
-  const handlePinSubmit = () => {
-    if (!verifyingProfile?.pin_hash) return;
-    if (verifyPin(pinInput, verifyingProfile.pin_hash)) {
-      setIsKids(verifyingProfile.is_kids);
-      navigate("/");
-    } else {
-      setPinError("PIN incorreto. Tente novamente.");
+  const handlePinSubmit = async () => {
+    if (!verifyingProfile) return;
+    try {
+      const { data, error } = await supabase.rpc("verify_profile_pin", {
+        p_profile_id: verifyingProfile.id,
+        p_pin: pinInput,
+      });
+      if (error) throw error;
+      if (data) {
+        setIsKids(verifyingProfile.is_kids);
+        navigate("/");
+      } else {
+        setPinError("PIN incorreto. Tente novamente.");
+        setPinInput("");
+      }
+    } catch (err) {
+      console.error("Error verifying PIN:", err);
+      setPinError("Erro ao verificar PIN.");
       setPinInput("");
     }
   };
@@ -138,7 +144,7 @@ const ProfileSelect = () => {
     setSelectedAvatar(p.avatar_url);
     setProfileIsKids(p.is_kids);
     setMaxAgeRating(p.max_age_rating);
-    setPinEnabled(!!p.pin_hash);
+    setPinEnabled(!!p.has_pin);
     setPinValue("");
     setConfirmPin("");
     setActiveTab("profile");
@@ -173,16 +179,37 @@ const ProfileSelect = () => {
 
     setIsSaving(true);
     try {
-      let pinHashToSave: string | null = null;
-      
-      // Se estiver editando, mantém o PIN atual a menos que seja alterado
-      if (editingProfileId) {
-        const currentProfile = profiles.find(p => p.id === editingProfileId);
-        pinHashToSave = currentProfile?.pin_hash || null;
+      const profileData = {
+        display_name: safeName,
+        avatar_url: selectedAvatar,
+        is_kids: profileIsKids,
+        max_age_rating: profileIsKids ? Math.min(maxAgeRating, 10) : maxAgeRating,
+        theme: theme,
+        user_id: user.id,
+      };
+
+      let savedProfileId: string | null = null;
+
+      if (editingProfileId && editingProfileId !== "new") {
+        savedProfileId = editingProfileId;
+        const { error } = await supabase
+          .from("profiles")
+          .update(profileData)
+          .eq("id", editingProfileId);
+        if (error) throw error;
+      } else {
+        const { data: newProfile, error } = await supabase
+          .from("profiles")
+          .insert(profileData)
+          .select("id")
+          .single();
+        if (error) throw error;
+        savedProfileId = newProfile?.id || null;
       }
 
-      if (pinEnabled) {
-        if (pinValue) {
+      // Handle PIN server-side after profile save
+      if (savedProfileId) {
+        if (pinEnabled && pinValue) {
           if (!/^\d{4}$/.test(pinValue)) {
             toast({ title: "PIN inválido", description: "O PIN deve ter exatamente 4 dígitos.", variant: "destructive" });
             setIsSaving(false);
@@ -193,33 +220,11 @@ const ProfileSelect = () => {
             setIsSaving(false);
             return;
           }
-          pinHashToSave = hashPin(pinValue);
+          await supabase.rpc("set_profile_pin", { p_profile_id: savedProfileId, p_pin: pinValue });
+        } else if (!pinEnabled) {
+          // Clear PIN
+          await supabase.rpc("set_profile_pin", { p_profile_id: savedProfileId, p_pin: "" });
         }
-      } else {
-        pinHashToSave = null;
-      }
-
-      const profileData = {
-        display_name: safeName,
-        avatar_url: selectedAvatar,
-        is_kids: profileIsKids,
-        max_age_rating: profileIsKids ? Math.min(maxAgeRating, 10) : maxAgeRating,
-        pin_hash: pinHashToSave,
-        theme: theme,
-        user_id: user.id,
-      };
-
-      if (editingProfileId && editingProfileId !== "new") {
-        const { error } = await supabase
-          .from("profiles")
-          .update(profileData)
-          .eq("id", editingProfileId);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from("profiles")
-          .insert([profileData]);
-        if (error) throw error;
       }
 
       toast({ 
@@ -368,7 +373,7 @@ const ProfileSelect = () => {
                   </div>
                 )}
 
-                {!!p.pin_hash && !isManaging && (
+                {!!p.has_pin && !isManaging && (
                   <div className="absolute -bottom-2 -right-2 rounded-full p-1"
                     style={{ background: "hsl(var(--primary))" }}>
                     <Lock className="w-4 h-4 text-white" />

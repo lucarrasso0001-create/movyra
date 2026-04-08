@@ -10,6 +10,7 @@ export interface Profile {
   is_kids: boolean;
   max_age_rating: number;
   pin_hash: string | null;
+  has_pin: boolean;
   theme: string;
 }
 
