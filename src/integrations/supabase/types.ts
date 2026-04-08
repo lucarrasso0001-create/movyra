@@ -283,6 +283,7 @@ export type Database = {
           bio: string | null
           created_at: string
           display_name: string | null
+          has_pin: boolean
           id: string
           is_kids: boolean
           max_age_rating: number
@@ -297,6 +298,7 @@ export type Database = {
           bio?: string | null
           created_at?: string
           display_name?: string | null
+          has_pin?: boolean
           id?: string
           is_kids?: boolean
           max_age_rating?: number
@@ -311,6 +313,7 @@ export type Database = {
           bio?: string | null
           created_at?: string
           display_name?: string | null
+          has_pin?: boolean
           id?: string
           is_kids?: boolean
           max_age_rating?: number
@@ -597,6 +600,14 @@ export type Database = {
           metadata: Json
           titulo: string
         }[]
+      }
+      set_profile_pin: {
+        Args: { p_pin: string; p_profile_id: string }
+        Returns: boolean
+      }
+      verify_profile_pin: {
+        Args: { p_pin: string; p_profile_id: string }
+        Returns: boolean
       }
     }
     Enums: {
