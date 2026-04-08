@@ -58,6 +58,9 @@ const MovieCarousel = ({ title, movies, isLoading = false, categorySlug }: Movie
     scrollRef.current.scrollBy({ left: scrollAmount, behavior: "smooth" });
   };
 
+  // Hide carousel if not enough movies after deduplication
+  if (!isLoading && movies.length < MIN_MOVIES) return null;
+
   return (
     <section className="relative mb-12 overflow-visible">
       {/* Cabeçalho do Carrossel */}
