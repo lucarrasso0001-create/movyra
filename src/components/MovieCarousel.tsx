@@ -18,6 +18,8 @@ const MovieCardSkeleton = () => (
   </div>
 );
 
+const MIN_MOVIES = 4;
+
 const MovieCarousel = ({ title, movies, isLoading = false, categorySlug }: MovieCarouselProps) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
@@ -55,6 +57,9 @@ const MovieCarousel = ({ title, movies, isLoading = false, categorySlug }: Movie
     const scrollAmount = direction === "left" ? -clientWidth * 0.85 : clientWidth * 0.85;
     scrollRef.current.scrollBy({ left: scrollAmount, behavior: "smooth" });
   };
+
+  // Hide carousel if not enough movies after deduplication
+  if (!isLoading && movies.length < MIN_MOVIES) return null;
 
   return (
     <section className="relative mb-12 overflow-visible">

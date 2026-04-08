@@ -159,22 +159,41 @@ const getCertificationParams = (maxAge: number, type: "movie" | "tv"): Record<st
 
 // ==================== FETCH FUNCTIONS ====================
 
-export async function fetchMovies(type: "popular" | "top_rated" | "upcoming" | "now_playing" | "discover", page = 1, genreId?: string) {
+export async function fetchMovies(type: "popular" | "top_rated" | "upcoming" | "now_playing" | "discover", page = 1, genreId?: string, pages = 1) {
   const endpoint = type === "discover" ? "/discover/movie" : `/movie/${type}`;
   const params: Record<string, string> = { page: String(page) };
   if (genreId) params.with_genres = genreId;
   
   const data = await fetchTMDB<TMDBResponse<TMDBMovie>>(endpoint, params);
-  return data.results.map(transformMovie);
+  let results = data.results.map(transformMovie);
+
+  // Fetch additional pages if requested
+  if (pages > 1) {
+    for (let p = 2; p <= pages; p++) {
+      const extra = await fetchTMDB<TMDBResponse<TMDBMovie>>(endpoint, { ...params, page: String(p) });
+      results = [...results, ...extra.results.map(transformMovie)];
+    }
+  }
+
+  return results;
 }
 
-export async function fetchTVShows(type: "popular" | "top_rated" | "on_the_air" | "airing_today" | "discover", page = 1, genreId?: string) {
+export async function fetchTVShows(type: "popular" | "top_rated" | "on_the_air" | "airing_today" | "discover", page = 1, genreId?: string, pages = 1) {
   const endpoint = type === "discover" ? "/discover/tv" : `/tv/${type}`;
   const params: Record<string, string> = { page: String(page) };
   if (genreId) params.with_genres = genreId;
   
   const data = await fetchTMDB<TMDBResponse<TMDBTVShow>>(endpoint, params);
-  return data.results.map(transformTVShow);
+  let results = data.results.map(transformTVShow);
+
+  if (pages > 1) {
+    for (let p = 2; p <= pages; p++) {
+      const extra = await fetchTMDB<TMDBResponse<TMDBTVShow>>(endpoint, { ...params, page: String(p) });
+      results = [...results, ...extra.results.map(transformTVShow)];
+    }
+  }
+
+  return results;
 }
 
 export async function fetchTrending(timeWindow: "day" | "week" = "week") {

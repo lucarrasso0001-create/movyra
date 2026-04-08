@@ -29,63 +29,63 @@ const Movies = () => {
   // Gêneros (participam da deduplicação)
   const { data: actionMovies, isLoading: loadingAction } = useQuery({
     queryKey: ["movies-action"],
-    queryFn: () => fetchMovies("discover", 1, "28"),
+    queryFn: () => fetchMovies("discover", 1, "28", 2),
   });
   const { data: comedyMovies, isLoading: loadingComedy } = useQuery({
     queryKey: ["movies-comedy"],
-    queryFn: () => fetchMovies("discover", 1, "35"),
+    queryFn: () => fetchMovies("discover", 1, "35", 2),
   });
   const { data: horrorMovies, isLoading: loadingHorror } = useQuery({
     queryKey: ["movies-horror"],
-    queryFn: () => fetchMovies("discover", 1, "27"),
+    queryFn: () => fetchMovies("discover", 1, "27", 2),
   });
   const { data: dramaMovies, isLoading: loadingDrama } = useQuery({
     queryKey: ["movies-drama"],
-    queryFn: () => fetchMovies("discover", 1, "18"),
+    queryFn: () => fetchMovies("discover", 1, "18", 2),
   });
   const { data: romanceMovies, isLoading: loadingRomance } = useQuery({
     queryKey: ["movies-romance"],
-    queryFn: () => fetchMovies("discover", 1, "10749"),
+    queryFn: () => fetchMovies("discover", 1, "10749", 2),
   });
   const { data: sciFiMovies, isLoading: loadingSciFi } = useQuery({
     queryKey: ["movies-sci-fi"],
-    queryFn: () => fetchMovies("discover", 1, "878"),
+    queryFn: () => fetchMovies("discover", 1, "878", 2),
   });
   const { data: animationMovies, isLoading: loadingAnimation } = useQuery({
     queryKey: ["movies-animation"],
-    queryFn: () => fetchMovies("discover", 1, "16"),
+    queryFn: () => fetchMovies("discover", 1, "16", 2),
   });
   const { data: thrillerMovies, isLoading: loadingThriller } = useQuery({
     queryKey: ["movies-thriller"],
-    queryFn: () => fetchMovies("discover", 1, "53"),
+    queryFn: () => fetchMovies("discover", 1, "53", 2),
   });
   const { data: documentaryMovies, isLoading: loadingDocumentary } = useQuery({
     queryKey: ["movies-documentary"],
-    queryFn: () => fetchMovies("discover", 1, "99"),
+    queryFn: () => fetchMovies("discover", 1, "99", 2),
   });
   const { data: adventureMovies, isLoading: loadingAdventure } = useQuery({
     queryKey: ["movies-adventure"],
-    queryFn: () => fetchMovies("discover", 1, "12"),
+    queryFn: () => fetchMovies("discover", 1, "12", 2),
   });
   const { data: crimeMovies, isLoading: loadingCrime } = useQuery({
     queryKey: ["movies-crime"],
-    queryFn: () => fetchMovies("discover", 1, "80"),
+    queryFn: () => fetchMovies("discover", 1, "80", 2),
   });
   const { data: fantasyMovies, isLoading: loadingFantasy } = useQuery({
     queryKey: ["movies-fantasy"],
-    queryFn: () => fetchMovies("discover", 1, "14"),
+    queryFn: () => fetchMovies("discover", 1, "14", 2),
   });
   const { data: warMovies, isLoading: loadingWar } = useQuery({
     queryKey: ["movies-war"],
-    queryFn: () => fetchMovies("discover", 1, "10752"),
+    queryFn: () => fetchMovies("discover", 1, "10752", 2),
   });
   const { data: familyMovies, isLoading: loadingFamily } = useQuery({
     queryKey: ["movies-family"],
-    queryFn: () => fetchMovies("discover", 1, "10751"),
+    queryFn: () => fetchMovies("discover", 1, "10751", 2),
   });
   const { data: mysteryMovies, isLoading: loadingMystery } = useQuery({
     queryKey: ["movies-mystery"],
-    queryFn: () => fetchMovies("discover", 1, "9648"),
+    queryFn: () => fetchMovies("discover", 1, "9648", 2),
   });
 
   // --- DEDUPLICAÇÃO DE GÊNEROS ---
