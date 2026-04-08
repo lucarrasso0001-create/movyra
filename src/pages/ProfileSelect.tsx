@@ -226,11 +226,6 @@ const ProfileSelect = () => {
           await supabase.rpc("set_profile_pin", { p_profile_id: savedProfileId, p_pin: "" });
         }
       }
-        const { error } = await supabase
-          .from("profiles")
-          .insert([profileData]);
-        if (error) throw error;
-      }
 
       toast({ 
         title: editingProfileId && editingProfileId !== "new" ? "Perfil atualizado!" : "Perfil criado!", 
