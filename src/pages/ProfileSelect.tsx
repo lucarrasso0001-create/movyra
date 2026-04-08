@@ -144,7 +144,7 @@ const ProfileSelect = () => {
     setSelectedAvatar(p.avatar_url);
     setProfileIsKids(p.is_kids);
     setMaxAgeRating(p.max_age_rating);
-    setPinEnabled(!!p.pin_hash);
+    setPinEnabled(!!p.has_pin);
     setPinValue("");
     setConfirmPin("");
     setActiveTab("profile");
@@ -373,7 +373,7 @@ const ProfileSelect = () => {
                   </div>
                 )}
 
-                {!!p.pin_hash && !isManaging && (
+                {!!p.has_pin && !isManaging && (
                   <div className="absolute -bottom-2 -right-2 rounded-full p-1"
                     style={{ background: "hsl(var(--primary))" }}>
                     <Lock className="w-4 h-4 text-white" />
