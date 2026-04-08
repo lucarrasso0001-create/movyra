@@ -35,12 +35,7 @@ const AGE_RATINGS = [
   { label: "18+", value: 18, color: "hsl(0 85% 40%)" },
 ];
 
-function hashPin(pin: string): string {
-  return btoa(pin + "movyra_salt_2026");
-}
-function verifyPin(pin: string, hash: string): boolean {
-  return hashPin(pin) === hash;
-}
+// PIN verification and hashing are done server-side via RPC functions
 
 type ManageTab = "profile" | "parental" | "theme";
 
