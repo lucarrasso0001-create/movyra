@@ -179,16 +179,37 @@ const ProfileSelect = () => {
 
     setIsSaving(true);
     try {
-      let pinHashToSave: string | null = null;
-      
-      // Se estiver editando, mantém o PIN atual a menos que seja alterado
-      if (editingProfileId) {
-        const currentProfile = profiles.find(p => p.id === editingProfileId);
-        pinHashToSave = currentProfile?.pin_hash || null;
+      const profileData = {
+        display_name: safeName,
+        avatar_url: selectedAvatar,
+        is_kids: profileIsKids,
+        max_age_rating: profileIsKids ? Math.min(maxAgeRating, 10) : maxAgeRating,
+        theme: theme,
+        user_id: user.id,
+      };
+
+      let savedProfileId: string | null = null;
+
+      if (editingProfileId && editingProfileId !== "new") {
+        savedProfileId = editingProfileId;
+        const { error } = await supabase
+          .from("profiles")
+          .update(profileData)
+          .eq("id", editingProfileId);
+        if (error) throw error;
+      } else {
+        const { data: newProfile, error } = await supabase
+          .from("profiles")
+          .insert(profileData)
+          .select("id")
+          .single();
+        if (error) throw error;
+        savedProfileId = newProfile?.id || null;
       }
 
-      if (pinEnabled) {
-        if (pinValue) {
+      // Handle PIN server-side after profile save
+      if (savedProfileId) {
+        if (pinEnabled && pinValue) {
           if (!/^\d{4}$/.test(pinValue)) {
             toast({ title: "PIN inválido", description: "O PIN deve ter exatamente 4 dígitos.", variant: "destructive" });
             setIsSaving(false);
@@ -199,29 +220,12 @@ const ProfileSelect = () => {
             setIsSaving(false);
             return;
           }
-          pinHashToSave = hashPin(pinValue);
+          await supabase.rpc("set_profile_pin", { p_profile_id: savedProfileId, p_pin: pinValue });
+        } else if (!pinEnabled) {
+          // Clear PIN
+          await supabase.rpc("set_profile_pin", { p_profile_id: savedProfileId, p_pin: "" });
         }
-      } else {
-        pinHashToSave = null;
       }
-
-      const profileData = {
-        display_name: safeName,
-        avatar_url: selectedAvatar,
-        is_kids: profileIsKids,
-        max_age_rating: profileIsKids ? Math.min(maxAgeRating, 10) : maxAgeRating,
-        pin_hash: pinHashToSave,
-        theme: theme,
-        user_id: user.id,
-      };
-
-      if (editingProfileId && editingProfileId !== "new") {
-        const { error } = await supabase
-          .from("profiles")
-          .update(profileData)
-          .eq("id", editingProfileId);
-        if (error) throw error;
-      } else {
         const { error } = await supabase
           .from("profiles")
           .insert([profileData]);
