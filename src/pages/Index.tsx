@@ -155,6 +155,12 @@ const Index = () => {
           ))}
 
           <div className={`relative z-10 ${!isKidsMode ? "-mt-20 md:-mt-32" : "pt-24"} pt-4 pb-20`}>
+            {/* AI Smart Search */}
+            <AISmartSearch />
+
+            {/* AI Recommendations */}
+            <AIRecommendations />
+
             {/* Continue Watching */}
             {continueWatchingMovies.length > 0 && (
               <MovieCarousel
