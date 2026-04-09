@@ -4,6 +4,9 @@ import HeroSection from "@/components/HeroSection";
 import HeroSkeleton from "@/components/HeroSkeleton";
 import MovieCarousel from "@/components/MovieCarousel";
 import MovieCard from "@/components/MovieCard";
+import AISmartSearch from "@/components/AISmartSearch";
+import AIRecommendations from "@/components/AIRecommendations";
+import AIChatWidget from "@/components/AIChatWidget";
 import { 
   useTrendingMovies, 
   usePopularMovies, 
