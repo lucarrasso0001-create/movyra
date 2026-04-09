@@ -243,6 +243,9 @@ const Index = () => {
           </div>
         </div>
       </footer>
+
+      {/* AI Chat Widget */}
+      <AIChatWidget />
     </div>
   );
 };
