@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Sparkles } from "lucide-react";
 import MovieCard from "@/components/MovieCard";
 import type { Movie } from "@/types/tmdb";
+import { supabase } from "@/integrations/supabase/client";
 
 interface AIRec extends Movie {
   reason?: string;
@@ -23,11 +24,14 @@ export default function AIRecommendations() {
 
     async function fetchRecs() {
       try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) { if (!cancelled) setLoading(false); return; }
         const resp = await fetch(REC_URL, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            Authorization: `Bearer ${session.access_token}`,
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           },
           body: JSON.stringify({ action: "recommendations" }),
         });

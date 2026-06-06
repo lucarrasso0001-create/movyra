@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Search, Sparkles, Loader2 } from "lucide-react";
 import MovieCard from "@/components/MovieCard";
 import type { Movie } from "@/types/tmdb";
+import { supabase } from "@/integrations/supabase/client";
 
 const SEARCH_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-assistant`;
 
@@ -24,11 +25,14 @@ export default function AISmartSearch() {
     setResult(null);
 
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
       const resp = await fetch(SEARCH_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          Authorization: `Bearer ${token}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
         },
         body: JSON.stringify({ action: "smart_search", query: text }),
       });
