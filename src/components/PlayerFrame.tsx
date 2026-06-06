@@ -138,12 +138,13 @@ const PlayerFrame = ({
       ? `${movieTitle} — T${seasonNumber}:E${episodeNumber}${episodeTitle ? ` "${episodeTitle}"` : ""}`
       : movieTitle;
 
-  // Construir URL do Fembed
-  const videoUrl = videoHash
-    ? `https://bysevepoin.com/e/${videoHash}-${audioType}`
-    : mediaType === "tv" && seasonNumber && episodeNumber
-    ? `https://fembed.sx/e/${movieId}/${seasonNumber}-${episodeNumber}`
-    : `https://fembed.sx/e/${movieId}`;
+  // Construir URL do WarezCDN
+  // Filmes: /filme/{tmdb_id ou tt_imdb}
+  // Séries/Animes/Doramas: /serie/{tmdb_id}/{temporada}/{episodio}
+  const videoUrl =
+    mediaType === "tv" && seasonNumber && episodeNumber
+      ? `https://warezcdn.lat/serie/${movieId}/${seasonNumber}/${episodeNumber}`
+      : `https://warezcdn.lat/filme/${movieId}`;
 
   const handleClose = () => {
     if (onClose) onClose();
