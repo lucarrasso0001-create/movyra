@@ -1,1 +1,7 @@
 project_id = "umvnoyglvixalhgwygjv"
+
+[functions.ai-assistant]
+verify_jwt = true
+
+[functions.stream-resolver]
+verify_jwt = true
