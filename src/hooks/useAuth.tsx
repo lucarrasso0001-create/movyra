@@ -40,7 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const { data, error } = await supabase
         .from("profiles")
-        .select("*")
+        .select("id,user_id,display_name,avatar_url,is_kids,max_age_rating,has_pin,theme")
         .eq("user_id", userId)
         .order("created_at", { ascending: true })
         .limit(1)
