@@ -18,6 +18,7 @@ import NotFound from "./pages/NotFound";
 import ProfileSelect from "./pages/ProfileSelect";
 import Trending from "./pages/Trending";
 import Account from "./pages/Account";
+import Live from "./pages/Live";
 
 const queryClient = new QueryClient();
 
@@ -39,6 +40,7 @@ const App = () => (
                 <Route path="/filmes" element={<ProtectedRoute><Movies /></ProtectedRoute>} />
                 <Route path="/series" element={<ProtectedRoute><Series /></ProtectedRoute>} />
                 <Route path="/bombando" element={<ProtectedRoute><Trending /></ProtectedRoute>} />
+                <Route path="/aovivo" element={<ProtectedRoute><Live /></ProtectedRoute>} />
                 <Route path="/categoria/:slug" element={<ProtectedRoute><CategoryPage /></ProtectedRoute>} />
                 <Route path="/movie/:id" element={<ProtectedRoute><MovieDetail /></ProtectedRoute>} />
                 <Route path="/my-list" element={<ProtectedRoute><MyList /></ProtectedRoute>} />

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { Search, X, User, Settings, LogOut, UserCircle, Home, Film, Tv, TrendingUp, Heart } from "lucide-react";
+import { Search, X, User, Settings, LogOut, UserCircle, Home, Film, Tv, TrendingUp, Heart, Radio } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -31,6 +31,7 @@ const Navbar = ({ onSearchChange }: NavbarProps) => {
               <Link to="/filmes" className="hover:text-white transition-colors">Filmes</Link>
               <Link to="/series" className="hover:text-white transition-colors">Séries</Link>
               <Link to="/bombando" className="hover:text-white transition-colors">Bombando</Link>
+              <Link to="/aovivo" className="hover:text-white transition-colors">Ao Vivo</Link>
               <Link to="/my-list" className="hover:text-white transition-colors">Minha Lista</Link>
             </div>
           </div>
@@ -149,6 +150,7 @@ const Navbar = ({ onSearchChange }: NavbarProps) => {
             { path: "/filmes", icon: Film, label: "Filmes" },
             { path: "/series", icon: Tv, label: "Séries" },
             { path: "/bombando", icon: TrendingUp, label: "Bombando" },
+            { path: "/aovivo", icon: Radio, label: "Ao Vivo" },
             { path: "/my-list", icon: Heart, label: "Lista" },
           ].map(({ path, icon: Icon, label }) => (
             <Link 
