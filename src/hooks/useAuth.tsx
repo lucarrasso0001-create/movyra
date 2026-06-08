@@ -9,7 +9,7 @@ export interface Profile {
   avatar_url: string | null;
   is_kids: boolean;
   max_age_rating: number;
-  pin_hash: string | null;
+  pin_hash?: string | null;
   has_pin: boolean;
   theme: string;
 }
