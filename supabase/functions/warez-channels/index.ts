@@ -12,7 +12,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const res = await fetch('https://warezcdn.lat/lista?category=canais&format=json', {
+    const res = await fetch('https://reidosembeds.com/api/channels', {
       headers: { 'Accept': 'application/json' },
     });
     if (!res.ok) {
