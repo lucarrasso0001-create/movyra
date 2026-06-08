@@ -4,8 +4,6 @@ import HeroSection from "@/components/HeroSection";
 import HeroSkeleton from "@/components/HeroSkeleton";
 import MovieCarousel from "@/components/MovieCarousel";
 import MovieCard from "@/components/MovieCard";
-import AISmartSearch from "@/components/AISmartSearch";
-import AIRecommendations from "@/components/AIRecommendations";
 import AIChatWidget from "@/components/AIChatWidget";
 import { 
   useTrendingMovies, 
@@ -155,11 +153,6 @@ const Index = () => {
           ))}
 
           <div className={`relative z-10 ${!isKidsMode ? "-mt-20 md:-mt-32" : "pt-24"} pt-4 pb-20`}>
-            {/* AI Smart Search */}
-            <AISmartSearch />
-
-            {/* AI Recommendations */}
-            <AIRecommendations />
 
             {/* Continue Watching */}
             {continueWatchingMovies.length > 0 && (
