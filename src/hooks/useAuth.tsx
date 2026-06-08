@@ -9,7 +9,7 @@ export interface Profile {
   avatar_url: string | null;
   is_kids: boolean;
   max_age_rating: number;
-  pin_hash: string | null;
+  pin_hash?: string | null;
   has_pin: boolean;
   theme: string;
 }
@@ -40,7 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const { data, error } = await supabase
         .from("profiles")
-        .select("*")
+        .select("id,user_id,display_name,avatar_url,is_kids,max_age_rating,has_pin,theme")
         .eq("user_id", userId)
         .order("created_at", { ascending: true })
         .limit(1)
