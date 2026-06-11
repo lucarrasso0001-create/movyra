@@ -7,7 +7,9 @@ const PROXY_BASE = '/functions/v1/hls-proxy';
 
 function getProxyBase(req: Request): string {
   const url = new URL(req.url);
-  return `${url.origin}${PROXY_BASE}`;
+  // Forçar https — o runtime pode receber a request como http internamente
+  const host = req.headers.get('x-forwarded-host') || url.host;
+  return `https://${host}${PROXY_BASE}`;
 }
 
 function rewriteManifest(manifest: string, baseUrl: URL, proxyBase: string): string {
