@@ -151,7 +151,7 @@ const MovieDetail = () => {
 
                     <div className="flex items-center gap-4 flex-wrap">
                       <button
-                        onClick={() => setWatching(true)}
+                        onClick={() => { setPendingEpisode(null); setServerPickerOpen(true); }}
                         className="flex items-center gap-3 bg-white text-black font-black uppercase tracking-tighter px-10 py-5 rounded-2xl transition-all hover:scale-105 active:scale-95 shadow-2xl group"
                       >
                         <Play className="w-6 h-6 fill-current group-hover:scale-110 transition-transform" /> Assistir Agora
