@@ -8,6 +8,7 @@ import { toast } from "@/hooks/use-toast";
 import Navbar from "@/components/Navbar";
 import TrailerModal from "@/components/TrailerModal";
 import PlayerFrame from "@/components/PlayerFrame";
+import ServerSelector, { AudioType, ServerType } from "@/components/ServerSelector";
 import EpisodeSelector from "@/components/EpisodeSelector";
 import MovieCarousel from "@/components/MovieCarousel";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -24,14 +25,29 @@ const MovieDetail = () => {
   const [trailerOpen, setTrailerOpen] = useState(false);
   const [watching, setWatching] = useState(false);
   const [currentEpisode, setCurrentEpisode] = useState<{ episode: TVEpisode; season: number } | null>(null);
+  const [serverPickerOpen, setServerPickerOpen] = useState(false);
+  const [pendingEpisode, setPendingEpisode] = useState<{ episode: TVEpisode; season: number } | null>(null);
+  const [audioChoice, setAudioChoice] = useState<AudioType>("dub");
+  const [serverChoice, setServerChoice] = useState<ServerType>("principal");
 
   // Recomendações (Simuladas com populares para preencher a página)
   const { data: recommendations } = usePopularMovies();
 
   const handleEpisodeSelect = (episode: TVEpisode, season: number) => {
-    setCurrentEpisode({ episode, season });
+    setPendingEpisode({ episode, season });
+    setServerPickerOpen(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleServerConfirm = (audio: AudioType, server: ServerType) => {
+    setAudioChoice(audio);
+    setServerChoice(server);
+    if (pendingEpisode) {
+      setCurrentEpisode(pendingEpisode);
+      setPendingEpisode(null);
+    }
+    setServerPickerOpen(false);
     setWatching(true);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   if (isLoading) {
@@ -81,6 +97,8 @@ const MovieDetail = () => {
                 mediaType={movie.mediaType}
                 seasonNumber={currentEpisode?.season}
                 episodeNumber={currentEpisode?.episode.episode_number}
+                audioType={audioChoice}
+                serverType={serverChoice}
                 onClose={() => setWatching(false)}
               />
             </motion.div>
