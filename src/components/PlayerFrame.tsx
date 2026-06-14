@@ -23,7 +23,8 @@ interface PlayerFrameProps {
   onNextEpisode?: () => void;
   nextEpisodeInfo?: NextEpisodeInfo | null;
   videoHash?: string;
-  audioType?: string;
+  audioType?: "dub" | "leg" | string;
+  serverType?: "principal" | "alternativo";
 }
 
 // CSS injetado no iframe para bloquear anúncios
@@ -130,22 +131,25 @@ const PlayerFrame = ({
   nextEpisodeInfo,
   videoHash,
   audioType = "dub",
+  serverType = "principal",
 }: PlayerFrameProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const displayTitle =
     mediaType === "tv" && seasonNumber && episodeNumber
       ? `${movieTitle} — T${seasonNumber}:E${episodeNumber}${episodeTitle ? ` "${episodeTitle}"` : ""}`
       : movieTitle;
 
-  // Construir URL do WarezCDN
-  // Filmes: /filme/{tmdb_id ou tt_imdb}
-  // Séries/Animes/Doramas: /serie/{tmdb_id}/{temporada}/{episodio}
-  const videoUrl =
+  // Construir URL do WarezCDN com áudio + servidor (params são preservados pelo player upstream).
+  const baseUrl =
     mediaType === "tv" && seasonNumber && episodeNumber
       ? `https://warezcdn.lat/serie/${movieId}/${seasonNumber}/${episodeNumber}`
       : `https://warezcdn.lat/filme/${movieId}`;
+  const lang = audioType === "leg" ? "legendado" : "dublado";
+  const srv = serverType === "alternativo" ? "2" : "1";
+  const videoUrl = `${baseUrl}?lang=${lang}&server=${srv}`;
 
   const handleClose = () => {
     if (onClose) onClose();
