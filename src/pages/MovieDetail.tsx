@@ -267,6 +267,18 @@ const MovieDetail = () => {
         videoKey={movie.trailerKey}
         title={movie.title}
       />
+
+      {/* Server / Audio Selector */}
+      <ServerSelector
+        open={serverPickerOpen}
+        movieTitle={
+          pendingEpisode
+            ? `${movie.title} — T${pendingEpisode.season}E${pendingEpisode.episode.episode_number}`
+            : movie.title
+        }
+        onClose={() => { setServerPickerOpen(false); setPendingEpisode(null); }}
+        onSelect={handleServerConfirm}
+      />
     </div>
   );
 };
