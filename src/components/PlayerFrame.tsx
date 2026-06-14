@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { X, Loader2, Play } from "lucide-react";
+import { X, Loader2, Play, Maximize2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { enableAdSwallow, disableAdSwallow, fireDecoyPopup } from "@/lib/adSwallow";
 
 interface NextEpisodeInfo {
   title: string;
