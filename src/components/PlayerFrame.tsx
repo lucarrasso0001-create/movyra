@@ -308,8 +308,12 @@ const PlayerFrame = ({
           src={videoUrl}
           className="w-full h-full border-0"
           allowFullScreen
-          allow="autoplay; encrypted-media; fullscreen"
+          allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
           referrerPolicy="no-referrer"
+          // Sandbox sem allow-popups nem allow-top-navigation:
+          // impede o player de abrir abas/popups de anúncio e de redirecionar a janela principal,
+          // mantendo scripts, same-origin (para o player rodar) e formulários/mídia.
+          sandbox="allow-scripts allow-same-origin allow-forms allow-presentation allow-pointer-lock allow-orientation-lock"
         />
 
         {/* Camada anti-clique para bloquear popups */}
