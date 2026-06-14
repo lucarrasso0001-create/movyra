@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Play, Volume2, Subtitles, Server, Zap } from "lucide-react";
 
@@ -14,7 +14,7 @@ interface ServerSelectorProps {
 
 const ServerSelector = ({ open, movieTitle, onClose, onSelect }: ServerSelectorProps) => {
   // Step 0: audio, Step 1: server
-  const [audio, setAudio] = (require("react") as typeof import("react")).useState<AudioType | null>(null);
+  const [audio, setAudio] = useState<AudioType | null>(null);
 
   useEffect(() => {
     if (!open) setAudio(null);
