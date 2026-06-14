@@ -8,6 +8,7 @@ import { toast } from "@/hooks/use-toast";
 import Navbar from "@/components/Navbar";
 import TrailerModal from "@/components/TrailerModal";
 import PlayerFrame from "@/components/PlayerFrame";
+import ServerSelector, { AudioType, ServerType } from "@/components/ServerSelector";
 import EpisodeSelector from "@/components/EpisodeSelector";
 import MovieCarousel from "@/components/MovieCarousel";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -24,14 +25,29 @@ const MovieDetail = () => {
   const [trailerOpen, setTrailerOpen] = useState(false);
   const [watching, setWatching] = useState(false);
   const [currentEpisode, setCurrentEpisode] = useState<{ episode: TVEpisode; season: number } | null>(null);
+  const [serverPickerOpen, setServerPickerOpen] = useState(false);
+  const [pendingEpisode, setPendingEpisode] = useState<{ episode: TVEpisode; season: number } | null>(null);
+  const [audioChoice, setAudioChoice] = useState<AudioType>("dub");
+  const [serverChoice, setServerChoice] = useState<ServerType>("principal");
 
   // Recomendações (Simuladas com populares para preencher a página)
   const { data: recommendations } = usePopularMovies();
 
   const handleEpisodeSelect = (episode: TVEpisode, season: number) => {
-    setCurrentEpisode({ episode, season });
+    setPendingEpisode({ episode, season });
+    setServerPickerOpen(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleServerConfirm = (audio: AudioType, server: ServerType) => {
+    setAudioChoice(audio);
+    setServerChoice(server);
+    if (pendingEpisode) {
+      setCurrentEpisode(pendingEpisode);
+      setPendingEpisode(null);
+    }
+    setServerPickerOpen(false);
     setWatching(true);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   if (isLoading) {
@@ -81,6 +97,8 @@ const MovieDetail = () => {
                 mediaType={movie.mediaType}
                 seasonNumber={currentEpisode?.season}
                 episodeNumber={currentEpisode?.episode.episode_number}
+                audioType={audioChoice}
+                serverType={serverChoice}
                 onClose={() => setWatching(false)}
               />
             </motion.div>
@@ -133,7 +151,7 @@ const MovieDetail = () => {
 
                     <div className="flex items-center gap-4 flex-wrap">
                       <button
-                        onClick={() => setWatching(true)}
+                        onClick={() => { setPendingEpisode(null); setServerPickerOpen(true); }}
                         className="flex items-center gap-3 bg-white text-black font-black uppercase tracking-tighter px-10 py-5 rounded-2xl transition-all hover:scale-105 active:scale-95 shadow-2xl group"
                       >
                         <Play className="w-6 h-6 fill-current group-hover:scale-110 transition-transform" /> Assistir Agora
@@ -248,6 +266,18 @@ const MovieDetail = () => {
         onClose={() => setTrailerOpen(false)}
         videoKey={movie.trailerKey}
         title={movie.title}
+      />
+
+      {/* Server / Audio Selector */}
+      <ServerSelector
+        open={serverPickerOpen}
+        movieTitle={
+          pendingEpisode
+            ? `${movie.title} — T${pendingEpisode.season}E${pendingEpisode.episode.episode_number}`
+            : movie.title
+        }
+        onClose={() => { setServerPickerOpen(false); setPendingEpisode(null); }}
+        onSelect={handleServerConfirm}
       />
     </div>
   );
