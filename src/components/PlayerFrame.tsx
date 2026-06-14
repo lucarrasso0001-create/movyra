@@ -200,6 +200,54 @@ const PlayerFrame = ({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
+  // Tela cheia + neutralizador de popups/popunders enquanto o player estiver montado
+  useEffect(() => {
+    // 1) Dispara janela isca para consumir o popunder do primeiro clique
+    fireDecoyPopup();
+    // 2) Intercepta window.open por toda a árvore (anúncios → janela invisível auto-fechada)
+    enableAdSwallow();
+    // 3) Pede fullscreen no container do player
+    const t = setTimeout(() => {
+      const el = containerRef.current;
+      if (!el) return;
+      const req =
+        el.requestFullscreen ||
+        // @ts-ignore vendor
+        el.webkitRequestFullscreen ||
+        // @ts-ignore vendor
+        el.msRequestFullscreen;
+      if (req) {
+        try {
+          req.call(el).catch(() => {});
+        } catch {}
+      }
+    }, 120);
+
+    return () => {
+      clearTimeout(t);
+      disableAdSwallow();
+      if (document.fullscreenElement) {
+        try {
+          document.exitFullscreen?.();
+        } catch {}
+      }
+    };
+  }, []);
+
+  const handleEnterFullscreen = () => {
+    const el = containerRef.current;
+    if (!el) return;
+    const req =
+      el.requestFullscreen ||
+      // @ts-ignore vendor
+      el.webkitRequestFullscreen;
+    if (req) {
+      try {
+        req.call(el).catch(() => {});
+      } catch {}
+    }
+  };
+
   // Auto-play next episode overlay
   const [showNextOverlay, setShowNextOverlay] = useState(false);
   const [countdown, setCountdown] = useState(10);
@@ -218,11 +266,21 @@ const PlayerFrame = ({
 
   return (
     <motion.div
+      ref={containerRef}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center overflow-hidden"
     >
+      {/* Fullscreen button */}
+      <button
+        onClick={handleEnterFullscreen}
+        className="absolute top-4 right-16 z-30 bg-black/60 p-2 rounded-full hover:bg-black/80 transition-colors group"
+        aria-label="Tela cheia"
+      >
+        <Maximize2 className="w-5 h-5 text-white group-hover:scale-110 transition-transform" />
+      </button>
+
       {/* Close button */}
       <button
         onClick={handleClose}
