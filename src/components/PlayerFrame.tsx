@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { X, Loader2, Play, Maximize2 } from "lucide-react";
+import { X, Loader2, Play } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { enableAdSwallow, disableAdSwallow, fireDecoyPopup } from "@/lib/adSwallow";
 
 interface NextEpisodeInfo {
   title: string;
@@ -23,8 +22,7 @@ interface PlayerFrameProps {
   onNextEpisode?: () => void;
   nextEpisodeInfo?: NextEpisodeInfo | null;
   videoHash?: string;
-  audioType?: "dub" | "leg" | string;
-  serverType?: "principal" | "alternativo";
+  audioType?: string;
 }
 
 // CSS injetado no iframe para bloquear anúncios
@@ -131,25 +129,22 @@ const PlayerFrame = ({
   nextEpisodeInfo,
   videoHash,
   audioType = "dub",
-  serverType = "principal",
 }: PlayerFrameProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
 
   const displayTitle =
     mediaType === "tv" && seasonNumber && episodeNumber
       ? `${movieTitle} — T${seasonNumber}:E${episodeNumber}${episodeTitle ? ` "${episodeTitle}"` : ""}`
       : movieTitle;
 
-  // Construir URL do WarezCDN com áudio + servidor (params são preservados pelo player upstream).
-  const baseUrl =
+  // Construir URL do WarezCDN
+  // Filmes: /filme/{tmdb_id ou tt_imdb}
+  // Séries/Animes/Doramas: /serie/{tmdb_id}/{temporada}/{episodio}
+  const videoUrl =
     mediaType === "tv" && seasonNumber && episodeNumber
       ? `https://warezcdn.lat/serie/${movieId}/${seasonNumber}/${episodeNumber}`
       : `https://warezcdn.lat/filme/${movieId}`;
-  const lang = audioType === "leg" ? "legendado" : "dublado";
-  const srv = serverType === "alternativo" ? "2" : "1";
-  const videoUrl = `${baseUrl}?lang=${lang}&server=${srv}`;
 
   const handleClose = () => {
     if (onClose) onClose();
@@ -200,54 +195,6 @@ const PlayerFrame = ({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  // Tela cheia + neutralizador de popups/popunders enquanto o player estiver montado
-  useEffect(() => {
-    // 1) Dispara janela isca para consumir o popunder do primeiro clique
-    fireDecoyPopup();
-    // 2) Intercepta window.open por toda a árvore (anúncios → janela invisível auto-fechada)
-    enableAdSwallow();
-    // 3) Pede fullscreen no container do player
-    const t = setTimeout(() => {
-      const el = containerRef.current;
-      if (!el) return;
-      const req =
-        el.requestFullscreen ||
-        // @ts-ignore vendor
-        el.webkitRequestFullscreen ||
-        // @ts-ignore vendor
-        el.msRequestFullscreen;
-      if (req) {
-        try {
-          req.call(el).catch(() => {});
-        } catch {}
-      }
-    }, 120);
-
-    return () => {
-      clearTimeout(t);
-      disableAdSwallow();
-      if (document.fullscreenElement) {
-        try {
-          document.exitFullscreen?.();
-        } catch {}
-      }
-    };
-  }, []);
-
-  const handleEnterFullscreen = () => {
-    const el = containerRef.current;
-    if (!el) return;
-    const req =
-      el.requestFullscreen ||
-      // @ts-ignore vendor
-      el.webkitRequestFullscreen;
-    if (req) {
-      try {
-        req.call(el).catch(() => {});
-      } catch {}
-    }
-  };
-
   // Auto-play next episode overlay
   const [showNextOverlay, setShowNextOverlay] = useState(false);
   const [countdown, setCountdown] = useState(10);
@@ -266,21 +213,11 @@ const PlayerFrame = ({
 
   return (
     <motion.div
-      ref={containerRef}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center overflow-hidden"
     >
-      {/* Fullscreen button */}
-      <button
-        onClick={handleEnterFullscreen}
-        className="absolute top-4 right-16 z-30 bg-black/60 p-2 rounded-full hover:bg-black/80 transition-colors group"
-        aria-label="Tela cheia"
-      >
-        <Maximize2 className="w-5 h-5 text-white group-hover:scale-110 transition-transform" />
-      </button>
-
       {/* Close button */}
       <button
         onClick={handleClose}
@@ -308,11 +245,8 @@ const PlayerFrame = ({
           src={videoUrl}
           className="w-full h-full border-0"
           allowFullScreen
-          allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
-          // Sandbox sem allow-popups nem allow-top-navigation:
-          // impede o player de abrir abas/popups de anúncio e de redirecionar a janela principal,
-          // mantendo scripts, same-origin (para Cloudflare Turnstile), formulários e mídia.
-          sandbox="allow-scripts allow-same-origin allow-forms allow-presentation allow-pointer-lock allow-orientation-lock allow-modals"
+          allow="autoplay; encrypted-media; fullscreen"
+          referrerPolicy="no-referrer"
         />
 
         {/* Camada anti-clique para bloquear popups */}
