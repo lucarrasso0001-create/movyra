@@ -66,6 +66,7 @@ const Live = () => {
             name: o.name || existing?.name || o.id,
             logo_url: o.logo_url ?? existing?.logo_url ?? null,
             stream_url: o.stream_url,
+            sources: undefined,
             category: o.category || existing?.category || "Outros",
             quality: o.quality ?? existing?.quality ?? null,
           });
@@ -154,7 +155,7 @@ const Live = () => {
       hls.on(Hls.Events.ERROR, (_e, data) => {
         if (data.fatal) {
           console.error("[HLS]", data);
-          setPlayerState("error");
+          fail();
         }
       });
     } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
@@ -162,11 +163,11 @@ const Live = () => {
       video.src = src;
       video.play().catch(() => {});
     } else {
-      setPlayerState("error");
+      fail();
     }
 
     return () => {
-      cancelled = true;
+      cancelled = true; clearTimeout(stall);
       video.removeEventListener("playing", onPlaying);
       video.removeEventListener("error", onError);
       if (hlsRef.current) {
@@ -176,7 +177,7 @@ const Live = () => {
       video.removeAttribute("src");
       video.load();
     };
-  }, [playing]);
+  }, [playing, srcIndex]);
 
   const enterFullscreen = () => {
     const v = videoRef.current;
