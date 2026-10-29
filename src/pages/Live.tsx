@@ -7,6 +7,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { LIVE_CHANNEL_OVERRIDES } from "@/data/liveChannelOverrides";
 import Hls from "hls.js";
 
+interface Source {
+  url: string;
+  quality?: string | null;
+  referer?: string | null;
+  ua?: string | null;
+}
+
 interface Channel {
   id: string;
   name: string;
@@ -14,10 +21,16 @@ interface Channel {
   stream_url: string;
   category: string;
   quality?: string | null;
+  sources?: Source[];
 }
 
 const PROXY_BASE = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/hls-proxy`;
-const proxied = (u: string) => `${PROXY_BASE}?url=${encodeURIComponent(u)}`;
+const proxied = (s: Source) =>
+  `${PROXY_BASE}?url=${encodeURIComponent(s.url)}` +
+  (s.referer ? `&ref=${encodeURIComponent(s.referer)}` : "") +
+  (s.ua ? `&ua=${encodeURIComponent(s.ua)}` : "");
+const sourcesOf = (c: Channel): Source[] =>
+  c.sources && c.sources.length ? c.sources : [{ url: c.stream_url, quality: c.quality }];
 
 const Live = () => {
   const [channels, setChannels] = useState<Channel[]>([]);
