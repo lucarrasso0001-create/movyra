@@ -7,6 +7,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { LIVE_CHANNEL_OVERRIDES } from "@/data/liveChannelOverrides";
 import Hls from "hls.js";
 
+interface Source {
+  url: string;
+  quality?: string | null;
+  referer?: string | null;
+  ua?: string | null;
+}
+
 interface Channel {
   id: string;
   name: string;
@@ -14,17 +21,28 @@ interface Channel {
   stream_url: string;
   category: string;
   quality?: string | null;
+  sources?: Source[];
 }
 
 const PROXY_BASE = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/hls-proxy`;
-const proxied = (u: string) => `${PROXY_BASE}?url=${encodeURIComponent(u)}`;
+const proxied = (s: Source) =>
+  `${PROXY_BASE}?url=${encodeURIComponent(s.url)}` +
+  (s.referer ? `&ref=${encodeURIComponent(s.referer)}` : "") +
+  (s.ua ? `&ua=${encodeURIComponent(s.ua)}` : "");
+const sourcesOf = (c: Channel): Source[] =>
+  c.sources && c.sources.length ? c.sources : [{ url: c.stream_url, quality: c.quality }];
 
 const Live = () => {
   const [channels, setChannels] = useState<Channel[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState<string>("Todos");
-  const [playing, setPlaying] = useState<Channel | null>(null);
+  const [playing, setPlayingRaw] = useState<Channel | null>(null);
+  const [srcIndex, setSrcIndex] = useState(0);
+  const setPlaying = (c: Channel | null) => {
+    setSrcIndex(0);
+    setPlayingRaw(c);
+  };
   const [playerState, setPlayerState] = useState<"loading" | "playing" | "error">("loading");
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
@@ -48,6 +66,7 @@ const Live = () => {
             name: o.name || existing?.name || o.id,
             logo_url: o.logo_url ?? existing?.logo_url ?? null,
             stream_url: o.stream_url,
+            sources: undefined,
             category: o.category || existing?.category || "Outros",
             quality: o.quality ?? existing?.quality ?? null,
           });
@@ -88,22 +107,34 @@ const Live = () => {
     return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0]));
   }, [filtered]);
 
-  // Player HLS
+  // Player HLS com troca automática de fonte
   useEffect(() => {
     if (!playing || !videoRef.current) return;
     const video = videoRef.current;
-    const src = proxied(playing.stream_url);
+    const list = sourcesOf(playing);
+    const src = proxied(list[Math.min(srcIndex, list.length - 1)]);
     setPlayerState("loading");
 
-    // Cleanup
     if (hlsRef.current) {
       hlsRef.current.destroy();
       hlsRef.current = null;
     }
 
     let cancelled = false;
-    const onPlaying = () => !cancelled && setPlayerState("playing");
-    const onError = () => !cancelled && setPlayerState("error");
+    let failed = false;
+    const fail = () => {
+      if (cancelled || failed) return;
+      failed = true;
+      if (srcIndex + 1 < list.length) setSrcIndex(srcIndex + 1);
+      else setPlayerState("error");
+    };
+    const stall = setTimeout(fail, 12000);
+    const onPlaying = () => {
+      if (cancelled) return;
+      clearTimeout(stall);
+      setPlayerState("playing");
+    };
+    const onError = fail;
     video.addEventListener("playing", onPlaying);
     video.addEventListener("error", onError);
 
@@ -124,7 +155,7 @@ const Live = () => {
       hls.on(Hls.Events.ERROR, (_e, data) => {
         if (data.fatal) {
           console.error("[HLS]", data);
-          setPlayerState("error");
+          fail();
         }
       });
     } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
@@ -132,11 +163,11 @@ const Live = () => {
       video.src = src;
       video.play().catch(() => {});
     } else {
-      setPlayerState("error");
+      fail();
     }
 
     return () => {
-      cancelled = true;
+      cancelled = true; clearTimeout(stall);
       video.removeEventListener("playing", onPlaying);
       video.removeEventListener("error", onError);
       if (hlsRef.current) {
@@ -146,7 +177,7 @@ const Live = () => {
       video.removeAttribute("src");
       video.load();
     };
-  }, [playing]);
+  }, [playing, srcIndex]);
 
   const enterFullscreen = () => {
     const v = videoRef.current;
@@ -299,7 +330,7 @@ const Live = () => {
                 <div className="flex flex-col items-center gap-3">
                   <Loader2 className="w-10 h-10 text-primary animate-spin" />
                   <p className="text-white/60 text-xs font-bold uppercase tracking-widest">
-                    Carregando stream...
+                    Carregando fonte {srcIndex + 1} de {sourcesOf(playing).length}...
                   </p>
                 </div>
               </div>
@@ -309,17 +340,31 @@ const Live = () => {
               <div className="absolute inset-0 flex items-center justify-center bg-black/85 px-6 text-center">
                 <div className="flex flex-col items-center gap-3 max-w-md">
                   <AlertTriangle className="w-10 h-10 text-red-500" />
-                  <p className="text-white font-black uppercase tracking-tight">
-                    Canal indisponível
-                  </p>
+                  <p className="text-white font-black uppercase tracking-tight">Canal indisponível</p>
                   <p className="text-white/50 text-sm">
-                    Este stream pode estar offline ou bloqueado pela fonte. Tente outro canal ou
-                    adicione um override manual em <code className="text-white/70">src/data/liveChannelOverrides.ts</code>.
+                    Nenhuma fonte deste canal respondeu agora. Tente outra fonte abaixo ou outro canal.
                   </p>
                 </div>
               </div>
             )}
           </div>
+
+          {sourcesOf(playing).length > 1 && (
+            <div className="flex gap-2 overflow-x-auto px-4 md:px-8 py-3 border-t border-white/10 scrollbar-hide">
+              {sourcesOf(playing).map((s, i) => (
+                <button
+                  key={i}
+                  onClick={() => setSrcIndex(i)}
+                  className={`shrink-0 px-4 h-9 rounded-full text-xs font-black uppercase tracking-widest transition-all ${
+                    i === srcIndex ? "bg-primary text-white" : "bg-white/5 text-white/60 hover:bg-white/10"
+                  }`}
+                >
+                  Fonte {i + 1}
+                  {s.quality ? ` · ${s.quality.split("·")[0].trim()}` : ""}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
