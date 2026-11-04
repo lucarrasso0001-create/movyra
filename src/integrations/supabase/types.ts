@@ -232,6 +232,60 @@ export type Database = {
           },
         ]
       }
+      media_links: {
+        Row: {
+          created_at: string
+          episode: number
+          expires_at: string | null
+          fail_count: number
+          id: string
+          kind: string | null
+          last_checked_at: string
+          media_type: string
+          season: number
+          source: string
+          source_url: string | null
+          status: string
+          tmdb_id: number
+          url: string | null
+          versao: string
+        }
+        Insert: {
+          created_at?: string
+          episode?: number
+          expires_at?: string | null
+          fail_count?: number
+          id?: string
+          kind?: string | null
+          last_checked_at?: string
+          media_type?: string
+          season?: number
+          source?: string
+          source_url?: string | null
+          status?: string
+          tmdb_id: number
+          url?: string | null
+          versao?: string
+        }
+        Update: {
+          created_at?: string
+          episode?: number
+          expires_at?: string | null
+          fail_count?: number
+          id?: string
+          kind?: string | null
+          last_checked_at?: string
+          media_type?: string
+          season?: number
+          source?: string
+          source_url?: string | null
+          status?: string
+          tmdb_id?: number
+          url?: string | null
+          versao?: string
+        }
+        Relationships: []
+      }
       movies_cache: {
         Row: {
           created_at: string
