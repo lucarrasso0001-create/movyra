@@ -54,7 +54,8 @@ const Live = () => {
         const { data, error } = await supabase.functions.invoke("live-channels");
         if (error) throw error;
         if (cancelled) return;
-        const base: Channel[] = (data?.data || []) as Channel[];
+        // Esconde canais em que nenhuma fonte respondeu no último teste
+        const base: Channel[] = ((data?.data || []) as (Channel & { alive?: boolean })[]).filter((c) => c.alive !== false);
 
         // Aplicar overrides manuais (substitui por id, ou adiciona)
         const map = new Map<string, Channel>();
