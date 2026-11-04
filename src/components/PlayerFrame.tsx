@@ -233,7 +233,7 @@ const PlayerFrame = ({
     return () => {
       iframe.removeEventListener('load', () => {});
     };
-  }, [videoUrl]);
+  }, [videoUrl, mode]);
 
   // Keyboard shortcut para fechar
   useEffect(() => {
