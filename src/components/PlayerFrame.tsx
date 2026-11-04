@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { X, Loader2, Play } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import Hls from "hls.js";
+import { supabase } from "@/integrations/supabase/client";
 
 interface NextEpisodeInfo {
   title: string;
@@ -132,6 +134,53 @@ const PlayerFrame = ({
 }: PlayerFrameProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  // "searching" -> procurando link direto; "direct" -> tocando link direto; "iframe" -> WarezCDN
+  const [mode, setMode] = useState<"searching" | "direct" | "iframe">("searching");
+  const [direct, setDirect] = useState<{ url: string; kind: string } | null>(null);
+  const tmdbNum = Number(movieId);
+  const reqBody = { tmdb_id: tmdbNum, media_type: mediaType, season: seasonNumber ?? 0, episode: episodeNumber ?? 0 };
+
+  // 1) Procurar link direto (banco primeiro, depois busca nova). Sem link -> WarezCDN.
+  useEffect(() => {
+    let cancelled = false;
+    setMode("searching");
+    setDirect(null);
+    if (!tmdbNum || (mediaType === "tv" && !(seasonNumber && episodeNumber))) { setMode("iframe"); return; }
+    supabase.functions.invoke("resolve-media", { body: reqBody }).then(({ data, error }) => {
+      if (cancelled) return;
+      if (!error && data?.url) { setDirect({ url: data.url, kind: data.kind }); setMode("direct"); }
+      else setMode("iframe");
+    });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [movieId, mediaType, seasonNumber, episodeNumber]);
+
+  const directFailed = useCallback(() => {
+    supabase.functions.invoke("resolve-media", { body: { ...reqBody, report_broken: true } });
+    setMode("iframe");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [movieId, mediaType, seasonNumber, episodeNumber]);
+
+  // 2) Tocar link direto (mp4 nativo ou HLS)
+  useEffect(() => {
+    if (mode !== "direct" || !direct || !videoRef.current) return;
+    const video = videoRef.current;
+    let hls: Hls | null = null;
+    const onErr = () => directFailed();
+    if (direct.kind === "hls" && Hls.isSupported()) {
+      hls = new Hls();
+      hls.loadSource(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/hls-proxy?url=${encodeURIComponent(direct.url)}`);
+      hls.attachMedia(video);
+      hls.on(Hls.Events.ERROR, (_e, d) => { if (d.fatal) onErr(); });
+    } else {
+      video.src = direct.url;
+      video.addEventListener("error", onErr);
+    }
+    if (initialTime) video.currentTime = initialTime;
+    video.play().catch(() => {});
+    return () => { hls?.destroy(); video.removeEventListener("error", onErr); video.removeAttribute("src"); };
+  }, [mode, direct, directFailed, initialTime]);
 
   const displayTitle =
     mediaType === "tv" && seasonNumber && episodeNumber
@@ -239,6 +288,16 @@ const PlayerFrame = ({
       </div>
 
       {/* Iframe Player - Fembed Only */}
+      {mode === "searching" && (
+        <div className="absolute inset-0 z-40 bg-black flex flex-col items-center justify-center gap-4">
+          <Loader2 className="w-12 h-12 text-primary animate-spin" />
+          <p className="text-white/70 font-bold animate-pulse">Procurando melhor fonte...</p>
+        </div>
+      )}
+      {mode === "direct" && (
+        <video ref={videoRef} controls autoPlay playsInline className="absolute inset-0 w-full h-full bg-black" />
+      )}
+      {mode === "iframe" && (
       <div className="absolute inset-0 flex items-center justify-center bg-black">
         <iframe
           ref={iframeRef}
@@ -255,10 +314,11 @@ const PlayerFrame = ({
           style={{ background: 'transparent' }}
         />
       </div>
+      )}
 
       {/* Loading overlay */}
       <AnimatePresence>
-        {isLoading && (
+        {isLoading && mode === "iframe" && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

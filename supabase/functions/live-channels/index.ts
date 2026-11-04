@@ -100,7 +100,7 @@ Deno.serve(async (req) => {
     // @ts-ignore EdgeRuntime existe no runtime
     if (typeof EdgeRuntime !== 'undefined') EdgeRuntime.waitUntil(checking);
     return new Response(JSON.stringify({ data: cache.data }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=1800' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=300' },
     });
   } catch (e) {
     return new Response(JSON.stringify({ error: (e as Error).message }), {
